@@ -125,65 +125,65 @@ public class MainActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
     }
-//
-//    private EditText editText, editText2;
-//    private Bardb helper;
-//    private SQLiteDatabase db;
-//    private TextView textView;
-//
-//    //データベース追加するボタン
-//    public void insert(View view) {
-//        if (helper == null) {
-//            helper = new Bardb(getApplicationContext());
-//        }
-//        if (db == null) {
-//            db = helper.getReadableDatabase();
-//        }
-//        editText = (EditText) findViewById(R.id.edit_text);
-//        String edittext = editText.getText().toString();
-//        editText2 = (EditText) findViewById(R.id.edit_text2);
-//        String edittext2 = editText2.getText().toString();
-//        insertData(db, edittext, edittext2);
-//    }
-//
-//    //データベースへ挿入するメソッド
-//    public void insertData(SQLiteDatabase db,
-//                           String barcord,
-//                           String count) {
-//        ContentValues values = new ContentValues();
-//        values.put(helper.COLUMN_NAME_BARCODE, barcord);
-//        values.put(helper.COLUMN_NAME_COUNT, count);
-//        db.insert(helper.TABLE_NAME, null, values);
-//    }
-//
-//
-//    //データベースを読み込むメソッド
-//    public void read(View view) {
-//        if (helper == null) {
-//            helper = new Bardb(getApplicationContext());
-//        }
-//        if (db == null) {
-//            db = helper.getReadableDatabase();
-//        }
-//        Cursor cursor = db.query(
-//                "bardb",
-//                null,
-//                null,
-//                null,
-//                null,
-//                null,
-//                null
-//        );
-//        cursor.moveToFirst();
-//        StringBuilder sbuilder = new StringBuilder();
-//        for (int i = 0; i < cursor.getCount(); i++) {
-//            sbuilder.append(cursor.getString(0));
-//            sbuilder.append(":");
-//            sbuilder.append(cursor.getString(1));
-//            sbuilder.append("/\n");
-//            cursor.moveToNext();
-//        }
-//        cursor.close();
-//
-//    }
+
+    private EditText editText, editText2;
+    private Bardb helper;
+    private SQLiteDatabase db;
+    private TextView textView;
+
+    //データベース追加するボタン
+    public void insert(View view) {
+        if (helper == null) {
+            helper = new Bardb(getApplicationContext());
+        }
+        if (db == null) {
+            db = helper.getReadableDatabase();
+        }
+        editText = (EditText) findViewById(R.id.barcode);
+        String edittext = editText.getText().toString();
+        editText2 = (EditText) findViewById(R.id.edit_text2);
+        String edittext2 = editText2.getText().toString();
+        insertData(db, edittext, edittext2);
+    }
+
+    //データベースへ挿入するメソッド
+    public void insertData(SQLiteDatabase db,
+                           String barcord,
+                           String count) {
+        ContentValues values = new ContentValues();
+        values.put(helper.COLUMN_NAME_BARCODE, barcord);
+        values.put(helper.COLUMN_NAME_COUNT, count);
+        db.insert(helper.TABLE_NAME, null, values);
+    }
+
+
+    //データベースを読み込むメソッド
+    public void read(View view) {
+        if (helper == null) {
+            helper = new Bardb(getApplicationContext());
+        }
+        if (db == null) {
+            db = helper.getReadableDatabase();
+        }
+        Cursor cursor = db.query(
+                "bardb",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+        cursor.moveToFirst();
+        StringBuilder sbuilder = new StringBuilder();
+        for (int i = 0; i < cursor.getCount(); i++) {
+            sbuilder.append(cursor.getString(0));
+            sbuilder.append(":");
+            sbuilder.append(cursor.getString(1));
+            sbuilder.append("/\n");
+            cursor.moveToNext();
+        }
+        cursor.close();
+
+    }
 }
