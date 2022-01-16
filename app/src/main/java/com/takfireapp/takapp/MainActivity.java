@@ -8,11 +8,16 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,7 +37,10 @@ public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
+    private Bardb helper;
+    private SQLiteDatabase db;
     Context mContext = null;	// mContextをnullで初期化.
+    InputMethodManager inputMethodManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +56,9 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+
+        //データ部のスクロール表示
+        ((TextView) findViewById(R.id.alldata)).setMovementMethod(new ScrollingMovementMethod());
 
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -71,12 +82,54 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+
+        /* キーボードをEnterで閉じる */
+
+        EditText           editCount;
+//        LinearLayout       mainLayout;
+        //キーボードを閉じたいEditTextオブジェクト
+        editCount           = (EditText) findViewById(R.id.editCount);
+        //画面全体のレイアウト
+//        mainLayout         = findViewById(R.id.coordinatorLayout);
+        //キーボード表示を制御するためのオブジェクト
+        inputMethodManager =  (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+
+        //EditTextにリスナーをセット
+        editCount.setOnKeyListener(new View.OnKeyListener() {
+
+            //コールバックとしてonKey()メソッドを定義
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                //イベントを取得するタイミングには、ボタンが押されてなおかつエンターキーだったときを指定
+                if((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)){
+                    //キーボードを閉じる
+                    inputMethodManager.hideSoftInputFromWindow(editCount.getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+
+                    return true;
+                }
+
+                return false;
+            }
+
+        });
+
     }
 
+    /**
+     * EditText編集時に背景をタップしたらキーボードを閉じるようにするタッチイベントの処理
+     */
+    public boolean onTouchEvent(MotionEvent event) {
+        //キーボードを隠す
+        inputMethodManager.hideSoftInputFromWindow(findViewById(R.id.coordinatorLayout).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        inputMethodManager.hideSoftInputFromWindow(findViewById(R.id.alldata).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        //背景にフォーカスを移す
+        findViewById(R.id.coordinatorLayout).requestFocus();
+
+        return false;
+    }
+
+
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-
-
-
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if(result != null) {
             if(result.getContents() == null) {
@@ -87,8 +140,13 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(mContext, result.getContents(), Toast.LENGTH_LONG).show();
 
 //                setContentView(R.layout.activity_main);
+                //読み取ったバーコードを表示する
                 TextView barcode = findViewById(R.id.barcode);
                 barcode.setText(result.getContents());
+
+                //バーコードに該当する個数を表示する
+                TextView count = findViewById(R.id.count);
+                count.setText(selectDataBarcode(db,result.getContents()));
             }
         } else {
             // This is important, otherwise the result will not be passed to the fragment
@@ -126,10 +184,7 @@ public class MainActivity extends AppCompatActivity {
                 || super.onSupportNavigateUp();
     }
 
-    private EditText editText, editText2;
-    private Bardb helper;
-    private SQLiteDatabase db;
-    private TextView textView;
+
 
     //データベース追加するボタン
     public void insert(View view) {
@@ -139,51 +194,124 @@ public class MainActivity extends AppCompatActivity {
         if (db == null) {
             db = helper.getReadableDatabase();
         }
-        editText = (EditText) findViewById(R.id.barcode);
-        String edittext = editText.getText().toString();
-        editText2 = (EditText) findViewById(R.id.edit_text2);
-        String edittext2 = editText2.getText().toString();
-        insertData(db, edittext, edittext2);
+
+        String barcode = ((TextView) findViewById(R.id.barcode)).getText().toString();
+        String count = ((TextView) findViewById(R.id.count)).getText().toString();
+        CharSequence ceditCount = ((TextView) findViewById(R.id.editCount)).getText().toString();
+
+        if(barcode == null || count == null){
+            return;
+        }
+
+        int icount = 0;
+        if (!"".equals(count)) {
+            icount = Integer.parseInt(count);
+        }
+
+        int ieditcount = 0;
+        if (!"".equals(ceditCount)) {
+            ieditcount = Integer.parseInt(String.valueOf(ceditCount));
+        }
+
+        int isum = 0;
+        isum = icount + ieditcount;
+
+        String sum = String.valueOf(isum);
+        insertData(db, barcode,sum);
     }
 
     //データベースへ挿入するメソッド
     public void insertData(SQLiteDatabase db,
-                           String barcord,
+                           String barcorde,
                            String count) {
         ContentValues values = new ContentValues();
-        values.put(helper.COLUMN_NAME_BARCODE, barcord);
+        values.put(helper.COLUMN_NAME_BARCODE, barcorde);
         values.put(helper.COLUMN_NAME_COUNT, count);
         db.insert(helper.TABLE_NAME, null, values);
     }
 
 
     //データベースを読み込むメソッド
-    public void read(View view) {
+    public void selectData(View view) {
         if (helper == null) {
             helper = new Bardb(getApplicationContext());
         }
         if (db == null) {
             db = helper.getReadableDatabase();
         }
-        Cursor cursor = db.query(
-                "bardb",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
-        cursor.moveToFirst();
-        StringBuilder sbuilder = new StringBuilder();
-        for (int i = 0; i < cursor.getCount(); i++) {
-            sbuilder.append(cursor.getString(0));
-            sbuilder.append(":");
-            sbuilder.append(cursor.getString(1));
-            sbuilder.append("/\n");
-            cursor.moveToNext();
-        }
-        cursor.close();
+        Cursor cursor = null;
+        try{
+            cursor = db.query(
+                    "bardb",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+            cursor.moveToFirst();
+            StringBuilder sbuilder = new StringBuilder();
+            for (int i = 0; i < cursor.getCount(); i++) {
+                sbuilder.append(cursor.getString(0));
+                sbuilder.append(":");
+                sbuilder.append(cursor.getString(1));
+                sbuilder.append(":");
+                sbuilder.append(cursor.getString(2));
+                sbuilder.append("/\n");
+                cursor.moveToNext();
+            }
 
+            TextView alldata = (TextView)findViewById(R.id.alldata);
+            alldata.setText(sbuilder);
+        } finally {
+            if( cursor != null ){
+                cursor.close();
+            }
+        }
     }
+
+    //データベースを読み込むメソッド
+    public String  selectDataBarcode(SQLiteDatabase db,
+                                     String barcorde) {
+        if (helper == null) {
+            helper = new Bardb(getApplicationContext());
+        }
+        if (db == null) {
+            db = helper.getReadableDatabase();
+        }
+        Cursor cursor = null;
+        try{
+            cursor = db.query(
+                    "bardb",
+                    new String[]{ "count" },
+                    "barcord = ?",
+                    new String[]{ barcorde },
+                    null,
+                    null,
+                    null );
+
+            // まず、Cursorからcountカラム
+            // 取り出すためのインデクス値を確認しておく
+            int indexCount = cursor.getColumnIndex( "count" );
+
+            String result = "";
+            while( cursor.moveToNext() ){
+                // 検索結果をCursorから取り出す
+                result = cursor.getString( indexCount );
+            }
+            return result;
+        } finally {
+            if( cursor != null ){
+                cursor.close();
+            }
+        }
+    }
+
+
+    //テーブルデータ削除
+    public void delete(View view){
+        db.delete("bardb", null, null);
+    }
+
 }
