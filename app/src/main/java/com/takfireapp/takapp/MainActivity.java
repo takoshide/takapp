@@ -28,9 +28,13 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.takfireapp.takapp.databinding.ActivityMainBinding;
+
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -147,6 +151,12 @@ public class MainActivity extends AppCompatActivity {
                 //バーコードに該当する個数を表示する
                 TextView count = findViewById(R.id.count);
                 count.setText(selectDataBarcode(db,result.getContents()));
+
+                //Yahooに接続
+                Yahoo yr =  new Yahoo();
+                AsyncHttpRequest task = new AsyncHttpRequest(this);
+                task.execute(yr.getYahooUrl("4901777247680"));
+
             }
         } else {
             // This is important, otherwise the result will not be passed to the fragment
@@ -313,5 +323,27 @@ public class MainActivity extends AppCompatActivity {
     public void delete(View view){
         db.delete("bardb", null, null);
     }
+
+//    /**
+//     * JSON文字列をMapに
+//     * @param json json文字列
+//     * @return json文字列を読み込んだMapオブジェクト。失敗した場合はnull
+//     */
+//    public static Map<String, Object> jsonStringToMap(String json) {
+//        Map<String, Object> map = null;
+//
+//        // com.fasterxml.jackson.databind.ObjectMapperを使います
+//        ObjectMapper mapper = new ObjectMapper();
+//
+//        try {
+//            // キーがString、値がObjectのマップに読み込みます。
+//            map = mapper.readValue(json, new TypeReference<Map<String, Object>>(){});
+//        } catch (Exception e) {
+//            // エラー
+//            e.printStackTrace();
+//        }
+//
+//        return map;
+//    }
 
 }

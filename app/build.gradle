@@ -45,4 +45,8 @@ dependencies {
     implementation  'com.journeyapps:zxing-android-legacy:2.0.1@aar'
     implementation  'com.journeyapps:zxing-android-integration:2.0.1@aar'
     implementation  'com.google.zxing:core:3.4.1'
+
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.9.7'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.7'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.9.7'
 }
