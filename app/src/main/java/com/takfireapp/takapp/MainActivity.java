@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
@@ -28,13 +29,10 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.takfireapp.takapp.databinding.ActivityMainBinding;
-
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -60,7 +58,6 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-
         //データ部のスクロール表示
         ((TextView) findViewById(R.id.alldata)).setMovementMethod(new ScrollingMovementMethod());
 
@@ -93,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
 //        LinearLayout       mainLayout;
         //キーボードを閉じたいEditTextオブジェクト
         editCount           = (EditText) findViewById(R.id.editCount);
+        editCount.setText("0");
         //画面全体のレイアウト
 //        mainLayout         = findViewById(R.id.coordinatorLayout);
         //キーボード表示を制御するためのオブジェクト
@@ -145,17 +143,27 @@ public class MainActivity extends AppCompatActivity {
 
 //                setContentView(R.layout.activity_main);
                 //読み取ったバーコードを表示する
+                String yahoolink = "https://shopping.yahoo.co.jp/search?X=2&sc_i=shp_pc_search_sort_sortitem&p=" + result.getContents();
                 TextView barcode = findViewById(R.id.barcode);
-                barcode.setText(result.getContents());
+                barcode.setText(yahoolink);
 
                 //バーコードに該当する個数を表示する
                 TextView count = findViewById(R.id.count);
-                count.setText(selectDataBarcode(db,result.getContents()));
+                String stock = selectDataBarcode(db,result.getContents());
+                if("".equals(stock)) {
+                    count.setText("0");
+                }else{
+                    count.setText(stock);
+                }
+
+                //1個数を表示する
+                EditText editCount = findViewById(R.id.editCount);
+                editCount.setText("1");
 
                 //Yahooに接続
                 Yahoo yr =  new Yahoo();
                 AsyncHttpRequest task = new AsyncHttpRequest(this);
-                task.execute(yr.getYahooUrl("4901777247680"));
+                task.execute(yr.getYahooUrl(result.getContents()));
 
             }
         } else {
@@ -164,6 +172,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void clear(){
+        TextView barcode = findViewById(R.id.barcode);
+        barcode.setText("");
+        TextView count = findViewById(R.id.count);
+        count.setText("0");
+        EditText editCount = findViewById(R.id.editCount);
+        editCount.setText("0");
+
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -194,7 +211,22 @@ public class MainActivity extends AppCompatActivity {
                 || super.onSupportNavigateUp();
     }
 
-
+    //count up
+    public void countup(View view) {
+        //+1
+        EditText editCount = findViewById(R.id.editCount);
+        int a = Integer.parseInt(String.valueOf(editCount.getText()));
+        a = a+1;
+        editCount.setText(String.valueOf(a));
+    }
+    //count down
+    public void countdown(View view) {
+        //-1
+        EditText editCount = findViewById(R.id.editCount);
+        int a = Integer.parseInt(String.valueOf(editCount.getText()));
+        a = a-1;
+        editCount.setText(String.valueOf(a));
+    }
 
     //データベース追加するボタン
     public void insert(View view) {
@@ -205,19 +237,26 @@ public class MainActivity extends AppCompatActivity {
             db = helper.getReadableDatabase();
         }
 
+        //バーコード
         String barcode = ((TextView) findViewById(R.id.barcode)).getText().toString();
+        //在庫数
         String count = ((TextView) findViewById(R.id.count)).getText().toString();
+        //変更数
         CharSequence ceditCount = ((TextView) findViewById(R.id.editCount)).getText().toString();
+        //商品名
+        String product = ((TextView) findViewById(R.id.proname)).getText().toString();
 
         if(barcode == null || count == null){
             return;
         }
 
+        //在庫数
         int icount = 0;
         if (!"".equals(count)) {
             icount = Integer.parseInt(count);
         }
 
+        //変更数
         int ieditcount = 0;
         if (!"".equals(ceditCount)) {
             ieditcount = Integer.parseInt(String.valueOf(ceditCount));
@@ -225,20 +264,58 @@ public class MainActivity extends AppCompatActivity {
 
         int isum = 0;
         isum = icount + ieditcount;
+        //在庫がマイナスの場合は０個
+        if(isum < 0){
+            isum = 0;
+        }
 
         String sum = String.valueOf(isum);
-        insertData(db, barcode,sum);
+
+        long recodeCount = DatabaseUtils.queryNumEntries(db, helper.TABLE_NAME,"barcord = ?",new String[]{barcode});
+
+        if(recodeCount == 0) {
+            insertData(db, barcode, sum, product);
+        }else {
+            updateData(db, barcode, sum);
+        }
+
+        selectData(view);
+
+        //表示クリア
+        clear();
+
     }
 
     //データベースへ挿入するメソッド
     public void insertData(SQLiteDatabase db,
                            String barcorde,
-                           String count) {
+                           String count,
+                           String product) {
         ContentValues values = new ContentValues();
         values.put(helper.COLUMN_NAME_BARCODE, barcorde);
         values.put(helper.COLUMN_NAME_COUNT, count);
+        values.put(helper.COLUMN_NAME_PRODUCT, product);
         db.insert(helper.TABLE_NAME, null, values);
     }
+
+
+    //データベースへ更新するメソッド
+    public void updateData(SQLiteDatabase db,
+                           String barcorde,
+                           String count
+                           ) {
+// New value for one column
+        String title = "MyNewTitle";
+        ContentValues values = new ContentValues();
+        values.put(helper.COLUMN_NAME_COUNT, count);
+
+// Which row to update, based on the title
+        String selection = helper.COLUMN_NAME_BARCODE + " LIKE ?";
+        String[] selectionArgs = { barcorde };
+
+        db.update(helper.TABLE_NAME,values,selection,selectionArgs);
+    }
+
 
 
     //データベースを読み込むメソッド
@@ -252,7 +329,7 @@ public class MainActivity extends AppCompatActivity {
         Cursor cursor = null;
         try{
             cursor = db.query(
-                    "bardb",
+                    helper.TABLE_NAME,
                     null,
                     null,
                     null,
@@ -268,6 +345,8 @@ public class MainActivity extends AppCompatActivity {
                 sbuilder.append(cursor.getString(1));
                 sbuilder.append(":");
                 sbuilder.append(cursor.getString(2));
+//                sbuilder.append(":");
+//                sbuilder.append(cursor.getString(3));
                 sbuilder.append("/\n");
                 cursor.moveToNext();
             }
@@ -293,7 +372,7 @@ public class MainActivity extends AppCompatActivity {
         Cursor cursor = null;
         try{
             cursor = db.query(
-                    "bardb",
+                    helper.TABLE_NAME,
                     new String[]{ "count" },
                     "barcord = ?",
                     new String[]{ barcorde },
@@ -321,7 +400,7 @@ public class MainActivity extends AppCompatActivity {
 
     //テーブルデータ削除
     public void delete(View view){
-        db.delete("bardb", null, null);
+        db.delete(helper.TABLE_NAME, null, null);
     }
 
 //    /**

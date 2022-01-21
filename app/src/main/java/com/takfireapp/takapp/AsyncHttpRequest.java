@@ -3,6 +3,7 @@ package com.takfireapp.takapp;
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -88,8 +89,8 @@ public class AsyncHttpRequest extends AsyncTask<String, Void, String> {
     @Override
     protected void onPostExecute(String result) {
 
-        // 取得した結果をテキストビューに入れちゃったり
-        TextView tv = (TextView) mainActivity.findViewById(R.id.proname);
+        // 取得した結果をEditTextに入れる
+        EditText tv = (EditText) mainActivity.findViewById(R.id.proname);
 
         JsonFactory factory = new JsonFactory();
         try {
@@ -113,6 +114,7 @@ public class AsyncHttpRequest extends AsyncTask<String, Void, String> {
             for(i=0;i<title.size();i++){
                 titles = title.get(i);
             }
+            tv.setTextSize(12.0f);
             tv.setText(title.get(0));
         } catch (JsonParseException e) {
             // TODO 自動生成された catch ブロック

@@ -37,13 +37,14 @@
         android:id="@+id/barcode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="4901777247681"
+        android:text="読み取ったバーコード"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.101"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.157" />
+        app:layout_constraintVertical_bias="0.157"
+        android:autoLink="web"/>
 
     <TextView
         android:id="@+id/count"
@@ -95,17 +96,17 @@
     <TextView
         android:id="@+id/alldata"
         android:layout_width="409dp"
-        android:layout_height="523dp"
+        android:layout_height="491dp"
         android:layout_marginTop="15dp"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:scrollbars="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintHorizontal_bias="0.058"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/proname"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="0.272" />
 
     <Button
         android:id="@+id/button3"
@@ -124,22 +125,23 @@
         android:id="@+id/editCount"
         android:layout_width="76dp"
         android:layout_height="40dp"
+        android:digits="123456789"
         android:ems="10"
         android:inputType="number"
+        android:maxLength="5"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.234"
         app:layout_constraintStart_toEndOf="@+id/count"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.163"
-        android:digits="0123456789"
-        android:maxLength="5"/>
+        app:layout_constraintVertical_bias="0.163" />
 
-    <TextView
+    <EditText
         android:id="@+id/proname"
-        android:layout_width="410dp"
-        android:layout_height="30dp"
-        android:text="TextView"
+        android:layout_width="413dp"
+        android:layout_height="58dp"
+        android:maxLength="50"
+        android:text="商品名"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.13"
@@ -147,17 +149,30 @@
         app:layout_constraintTop_toTopOf="@+id/toolbar"
         app:layout_constraintVertical_bias="0.23" />
 
-    <ToggleButton
-        android:id="@+id/toggleButton"
-        android:layout_width="68dp"
-        android:layout_height="39dp"
-        android:layout_marginTop="14dp"
-        android:layout_marginBottom="12dp"
-        android:text="ToggleButton"
-        app:layout_constraintBottom_toTopOf="@+id/proname"
-        app:layout_constraintEnd_toEndOf="parent"
+    <Button
+        android:id="@+id/button"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="12dp"
+        android:onClick="countup"
+        android:text="+"
+        app:icon="@android:drawable/arrow_up_float"
         app:layout_constraintStart_toEndOf="@+id/editCount"
         app:layout_constraintTop_toBottomOf="@+id/button3" />
+
+    <Button
+        android:id="@+id/button2"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="9dp"
+        android:layout_marginBottom="18dp"
+        android:onClick="countdown"
+        android:text="-"
+        app:icon="@android:drawable/arrow_down_float"
+        app:layout_constraintBottom_toTopOf="@+id/proname"
+        app:layout_constraintStart_toEndOf="@+id/editCount"
+        app:layout_constraintTop_toBottomOf="@+id/button"
+        app:layout_constraintVertical_bias="0.321" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
