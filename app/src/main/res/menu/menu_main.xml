@@ -4,6 +4,7 @@
     tools:context="com.takfireapp.takapp.MainActivity">
     <item
         android:id="@+id/action_settings"
+        android:icon="@android:drawable/ic_input_delete"
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never" />

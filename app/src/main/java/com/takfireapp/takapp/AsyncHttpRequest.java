@@ -1,6 +1,7 @@
 package com.takfireapp.takapp;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.EditText;
@@ -59,29 +60,7 @@ public class AsyncHttpRequest extends AsyncTask<String, Void, String> {
             // (5)エラー処理
             return e.toString();
         }
-//      HttpURLConnection con  = (HttpURLConnection)url.openConnection();
-//        con.setRequestMethod("GET");
-//        con.setInstanceFollowRedirects(false);
-//        con.connect();
-//        final int status = con.getResponseCode();
-//
-//        BufferedReader reader =
-//                new BufferedReader(new InputStreamReader(con.getInputStream()));
-//
-//        StringBuffer responseBuffer = new StringBuffer();
-//        while (true){
-//            String line = reader.readLine();
-//            if ( line == null ){
-//                break;
-//            }
-//            responseBuffer.append(line);
-//        }
-//
-//        reader.close();
-//        con.disconnect();
-//
-//        String result = responseBuffer.toString();
-//        onPostExecute(result);
+
     }
 
 
@@ -97,31 +76,61 @@ public class AsyncHttpRequest extends AsyncTask<String, Void, String> {
             JsonParser parser = factory.createParser(result);
             ArrayList<String> title = new ArrayList<>();
             int i = 0;
+            boolean break_flag = false;
             while (parser.nextToken() != JsonToken.END_OBJECT) {
+                if (break_flag) {
+                    break; // 外側ループを抜ける
+                }
                 while (parser.nextToken() != JsonToken.END_OBJECT) {
                     String name = parser.getCurrentName();
-                    if(name != null){
+                    if (name != null) {
                         parser.nextToken();
-                        Log.d("name",name);
-                        if(name.equals("name")){
+                        Log.d("name", name);
+                        if (name.equals("name")) {
                             title.add(parser.getText());
+                            break_flag = true;
                             break;
+                        }else if(name.equals("totalResultsAvailable")){
+                            if("0".equals(parser.getText())){
+                                break_flag = true;
+                                break;
+                            }
+                        }else if(name.equals("Error")){
+                                break_flag = true;
+                                break;
                         }
                     }
                 }
             }
             String titles = "";
-            for(i=0;i<title.size();i++){
-                titles = title.get(i);
+            if(title.size() == 0) {
+                titles = "商品名が見つかりませんでした。ここから40文字まで登録できます。";
+            }else{
+                titles = title.get(0);
             }
-            tv.setTextSize(12.0f);
-            tv.setText(title.get(0));
+                tv.setTextSize(12.0f);
+
+                int size = titles.length();
+
+                if (size < 20) {
+                    tv.setText(titles.substring(0, size));
+                } else if (size < 40) {
+                    tv.setText(titles.substring(0, 20) + "\n" + titles.substring(20, size));
+                } else {
+                    tv.setText(titles.substring(0, 20) + "\n" + titles.substring(20, 40));
+                }
+
+
         } catch (JsonParseException e) {
             // TODO 自動生成された catch ブロック
-            e.printStackTrace();
+            tv.setText("バーコードの読み取りでエラーが発生しました。在庫の登録ができません。");
+            tv.setTextSize(12.0f);
+            tv.setTextColor(Color.RED);
         } catch (IOException e) {
             // TODO 自動生成された catch ブロック
-            e.printStackTrace();
+            tv.setText("バーコードの読み取りでエラーが発生しました。在庫の登録ができません。");
+            tv.setTextSize(12.0f);
+            tv.setTextColor(Color.RED);
         }
 
     }

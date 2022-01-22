@@ -35,144 +35,149 @@
 
     <TextView
         android:id="@+id/barcode"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="読み取ったバーコード"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_width="300dp"
+        android:layout_height="20dp"
+        android:layout_marginTop="60dp"
+        android:background="@drawable/border"
+        android:text="読み取ったバーコードの値が表示されます。"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.101"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.157"
-        android:autoLink="web"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/count"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="120dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/border"
         android:text="0"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toTopOf="@+id/proname"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.11"
-        app:layout_constraintStart_toEndOf="@+id/barcode"
+        app:layout_constraintHorizontal_bias="0.048"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.157" />
+        app:layout_constraintVertical_bias="1.0" />
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
-        android:layout_width="250dp"
-        android:layout_height="36dp"
+        android:layout_width="350dp"
+        android:layout_height="40dp"
         android:background="?attr/colorPrimary"
+        app:layout_constraintBottom_toTopOf="@+id/players_layout"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.093"
         app:layout_constraintStart_toStartOf="parent"
-        app:popupTheme="@style/Theme.Takapp.PopupOverlay"
-        tools:layout_editor_absoluteY="2dp" />
+        app:popupTheme="@style/Theme.Takapp.PopupOverlay" />
 
     <Button
         android:id="@+id/insert"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        style="@style/Widget.MaterialComponents.Button"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginBottom="14dp"
         android:onClick="insert"
-        android:text="insert"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:text="登録"
+        android:textAlignment="center"
+        android:textColor="@color/zxinglegacy_contents_text"
+        app:layout_constraintBottom_toTopOf="@+id/proname"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.142"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/toolbar"
-        app:layout_constraintVertical_bias="0.07" />
-
-    <Button
-        android:id="@+id/select"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:onClick="selectData"
-        android:text="select"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.073" />
-
-    <TextView
-        android:id="@+id/alldata"
-        android:layout_width="409dp"
-        android:layout_height="491dp"
-        android:layout_marginTop="15dp"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:scrollbars="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.058"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/proname"
-        app:layout_constraintVertical_bias="0.272" />
-
-    <Button
-        android:id="@+id/button3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:onClick="delete"
-        android:text="delete"
-        app:layout_constraintBottom_toBottomOf="@+id/alldata"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.858"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.073" />
+        app:layout_constraintVertical_bias="1.0"
+        app:rippleColor="@color/design_default_color_on_secondary" />
 
     <EditText
         android:id="@+id/editCount"
-        android:layout_width="76dp"
+        android:layout_width="120dp"
         android:layout_height="40dp"
-        android:digits="123456789"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/border"
+        android:digits="0123456789"
         android:ems="10"
         android:inputType="number"
         android:maxLength="5"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.234"
+        android:text="0"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toTopOf="@+id/proname"
         app:layout_constraintStart_toEndOf="@+id/count"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.163" />
+        app:layout_constraintVertical_bias="0.951" />
 
     <EditText
         android:id="@+id/proname"
-        android:layout_width="413dp"
-        android:layout_height="58dp"
+        android:layout_width="414dp"
+        android:layout_height="55dp"
         android:maxLength="50"
-        android:text="商品名"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:text="読み取ったバーコードの商品名が表示されます。"
+        app:layout_constraintBottom_toTopOf="@+id/toolbar"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.13"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/toolbar"
-        app:layout_constraintVertical_bias="0.23" />
-
-    <Button
-        android:id="@+id/button"
-        android:layout_width="26dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="12dp"
-        android:onClick="countup"
-        android:text="+"
-        app:icon="@android:drawable/arrow_up_float"
-        app:layout_constraintStart_toEndOf="@+id/editCount"
-        app:layout_constraintTop_toBottomOf="@+id/button3" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0" />
 
     <Button
         android:id="@+id/button2"
-        android:layout_width="26dp"
-        android:layout_height="26dp"
-        android:layout_marginTop="9dp"
-        android:layout_marginBottom="18dp"
+        android:layout_width="46dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginBottom="12dp"
         android:onClick="countdown"
         android:text="-"
         app:icon="@android:drawable/arrow_down_float"
         app:layout_constraintBottom_toTopOf="@+id/proname"
-        app:layout_constraintStart_toEndOf="@+id/editCount"
-        app:layout_constraintTop_toBottomOf="@+id/button"
-        app:layout_constraintVertical_bias="0.321" />
+        app:layout_constraintStart_toEndOf="@+id/editCount" />
 
+    <LinearLayout
+        android:id="@+id/players_layout"
+        android:layout_width="350dp"
+        android:layout_height="400dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:context=".MainActivity">
+
+        <ScrollView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent">
+
+            <TableLayout
+                android:id="@+id/tablePlayers"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="0dp"
+                android:stretchColumns="*"></TableLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="今回値"
+        android:textColor="@color/black"
+        app:layout_constraintBottom_toTopOf="@+id/count"
+        app:layout_constraintTop_toBottomOf="@+id/barcode"
+        tools:layout_editor_absoluteX="172dp" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="今の在庫数"
+        app:layout_constraintBottom_toTopOf="@+id/count"
+        app:layout_constraintEnd_toStartOf="@+id/textView"
+        app:layout_constraintHorizontal_bias="0.2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/barcode"
+        app:layout_constraintVertical_bias="0.494" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

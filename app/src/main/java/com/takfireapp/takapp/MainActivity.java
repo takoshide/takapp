@@ -1,6 +1,7 @@
 package com.takfireapp.takapp;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -8,9 +9,13 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.method.ScrollingMovementMethod;
+import android.text.util.Linkify;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,7 +23,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,10 +35,15 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.takfireapp.takapp.databinding.ActivityMainBinding;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,6 +54,11 @@ public class MainActivity extends AppCompatActivity {
     private SQLiteDatabase db;
     Context mContext = null;	// mContextをnullで初期化.
     InputMethodManager inputMethodManager;
+    private TableLayout mTableLayout;
+    ProgressDialog mProgressBar;
+
+    StockData[] stockData = new StockData[99];
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,11 +71,18 @@ public class MainActivity extends AppCompatActivity {
         // mContextに自身をセット.
         mContext = this;	// mContextにthisを格納.
 
+//        setContentView(R.layout.activity_main);
+        mProgressBar = new ProgressDialog(this);
+        mTableLayout = (TableLayout) findViewById(R.id.tablePlayers);
+        mTableLayout.setStretchAllColumns(true);
+
+        selectData();
+
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         //データ部のスクロール表示
-        ((TextView) findViewById(R.id.alldata)).setMovementMethod(new ScrollingMovementMethod());
+//        ((TextView) findViewById(R.id.alldata)).setMovementMethod(new ScrollingMovementMethod());
 
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -123,14 +146,14 @@ public class MainActivity extends AppCompatActivity {
     public boolean onTouchEvent(MotionEvent event) {
         //キーボードを隠す
         inputMethodManager.hideSoftInputFromWindow(findViewById(R.id.coordinatorLayout).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-        inputMethodManager.hideSoftInputFromWindow(findViewById(R.id.alldata).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+//        inputMethodManager.hideSoftInputFromWindow(findViewById(R.id.alldata).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         //背景にフォーカスを移す
         findViewById(R.id.coordinatorLayout).requestFocus();
 
         return false;
     }
 
-
+//読み取ったバーコードの商品名を取得
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if(result != null) {
@@ -143,9 +166,8 @@ public class MainActivity extends AppCompatActivity {
 
 //                setContentView(R.layout.activity_main);
                 //読み取ったバーコードを表示する
-                String yahoolink = "https://shopping.yahoo.co.jp/search?X=2&sc_i=shp_pc_search_sort_sortitem&p=" + result.getContents();
                 TextView barcode = findViewById(R.id.barcode);
-                barcode.setText(yahoolink);
+                barcode.setText(String.valueOf(result.getContents()));
 
                 //バーコードに該当する個数を表示する
                 TextView count = findViewById(R.id.count);
@@ -172,14 +194,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //読み取った項目のクリア
     public void clear(){
         TextView barcode = findViewById(R.id.barcode);
-        barcode.setText("");
+        barcode.setText("読み取ったバーコードの値が表示されます。");
         TextView count = findViewById(R.id.count);
         count.setText("0");
         EditText editCount = findViewById(R.id.editCount);
         editCount.setText("0");
-
+        EditText proname = findViewById(R.id.proname);
+        proname.setText("読み取ったバーコードの商品名が表示されます。");
     }
 
     @Override
@@ -198,6 +222,9 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            delete();
+            clear();
+            selectData();
             return true;
         }
 
@@ -211,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
                 || super.onSupportNavigateUp();
     }
 
-    //count up
+    //count upボタン
     public void countup(View view) {
         //+1
         EditText editCount = findViewById(R.id.editCount);
@@ -219,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
         a = a+1;
         editCount.setText(String.valueOf(a));
     }
-    //count down
+    //count downボタン
     public void countdown(View view) {
         //-1
         EditText editCount = findViewById(R.id.editCount);
@@ -228,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
         editCount.setText(String.valueOf(a));
     }
 
-    //データベース追加するボタン
+    //データ登録ボタン
     public void insert(View view) {
         if (helper == null) {
             helper = new Bardb(getApplicationContext());
@@ -279,23 +306,27 @@ public class MainActivity extends AppCompatActivity {
             updateData(db, barcode, sum);
         }
 
-        selectData(view);
+        selectData();
 
         //表示クリア
         clear();
 
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
     //データベースへ挿入するメソッド
     public void insertData(SQLiteDatabase db,
                            String barcorde,
                            String count,
                            String product) {
-        ContentValues values = new ContentValues();
-        values.put(helper.COLUMN_NAME_BARCODE, barcorde);
-        values.put(helper.COLUMN_NAME_COUNT, count);
-        values.put(helper.COLUMN_NAME_PRODUCT, product);
-        db.insert(helper.TABLE_NAME, null, values);
+
+        if(!"0".equals(count) ) {
+            ContentValues values = new ContentValues();
+            values.put(helper.COLUMN_NAME_BARCODE, barcorde);
+            values.put(helper.COLUMN_NAME_COUNT, count);
+            values.put(helper.COLUMN_NAME_PRODUCT, product);
+            db.insert(helper.TABLE_NAME, null, values);
+        }
     }
 
 
@@ -316,10 +347,8 @@ public class MainActivity extends AppCompatActivity {
         db.update(helper.TABLE_NAME,values,selection,selectionArgs);
     }
 
-
-
     //データベースを読み込むメソッド
-    public void selectData(View view) {
+    public void selectData() {
         if (helper == null) {
             helper = new Bardb(getApplicationContext());
         }
@@ -338,21 +367,21 @@ public class MainActivity extends AppCompatActivity {
                     null
             );
             cursor.moveToFirst();
-            StringBuilder sbuilder = new StringBuilder();
+            stockData = new StockData[cursor.getCount()];
             for (int i = 0; i < cursor.getCount(); i++) {
-                sbuilder.append(cursor.getString(0));
-                sbuilder.append(":");
-                sbuilder.append(cursor.getString(1));
-                sbuilder.append(":");
-                sbuilder.append(cursor.getString(2));
-//                sbuilder.append(":");
-//                sbuilder.append(cursor.getString(3));
-                sbuilder.append("/\n");
+                Date now = new Date();
+                stockData[i] = new StockData(
+                        cursor.getString(0),
+                        cursor.getString(2),
+                        cursor.getString(1),
+                        new Date(now.getYear(),now.getMonth(),now.getDay()));
+
                 cursor.moveToNext();
             }
 
-            TextView alldata = (TextView)findViewById(R.id.alldata);
-            alldata.setText(sbuilder);
+            //一覧表示
+            startLoadData();
+
         } finally {
             if( cursor != null ){
                 cursor.close();
@@ -397,32 +426,181 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     //テーブルデータ削除
-    public void delete(View view){
+    public void delete(){
         db.delete(helper.TABLE_NAME, null, null);
     }
 
-//    /**
-//     * JSON文字列をMapに
-//     * @param json json文字列
-//     * @return json文字列を読み込んだMapオブジェクト。失敗した場合はnull
-//     */
-//    public static Map<String, Object> jsonStringToMap(String json) {
-//        Map<String, Object> map = null;
-//
-//        // com.fasterxml.jackson.databind.ObjectMapperを使います
-//        ObjectMapper mapper = new ObjectMapper();
-//
-//        try {
-//            // キーがString、値がObjectのマップに読み込みます。
-//            map = mapper.readValue(json, new TypeReference<Map<String, Object>>(){});
-//        } catch (Exception e) {
-//            // エラー
-//            e.printStackTrace();
-//        }
-//
-//        return map;
-//    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    public void startLoadData() {
+//        mProgressBar.setCancelable(false);
+//        mProgressBar.setMessage("読み込み中");
+//        mProgressBar.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+//        mProgressBar.show();
+        new LoadDataTask().execute(0);
+    }
+
+    public void loadData() {
+        int leftRowMargin=0;
+        int topRowMargin=0;
+        int rightRowMargin=0;
+        int bottomRowMargin = 0;
+        int miniSize = 0,textSize = 0, smallTextSize =0, mediumTextSize = 0;
+        miniSize =(int) getResources().getDimension(R.dimen.font_size_veryminismall);
+        textSize = (int) getResources().getDimension(R.dimen.font_size_verysmall);
+        smallTextSize = (int) getResources().getDimension(R.dimen.font_size_small);
+        mediumTextSize = (int) getResources().getDimension(R.dimen.font_size_medium);
+
+        int rows = stockData.length;
+        getSupportActionBar().setTitle("登録済み商品数：" + String.valueOf(rows));
+        TextView textSpacer = null;
+        mTableLayout.removeAllViews();
+        // -1 はヘッダー行
+        for(int i = -1; i < rows; i ++) {
+            StockData row = null;
+            if (i > -1) {
+                row = stockData[i];
+                if (row == null) {
+                    break;
+                }
+            }else {
+                textSpacer = new TextView(this);
+                textSpacer.setText("");
+            }
+            // 1列目(CODE)
+            final TextView tv = new TextView(this);
+            tv.setLayoutParams(new
+                    TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
+                    TableRow.LayoutParams.WRAP_CONTENT));
+            tv.setGravity(Gravity.LEFT);
+            tv.setPadding(5, 15, 0, 15);
+            if (i == -1) {
+                tv.setText("ﾊﾞｰｺｰﾄﾞ");
+                tv.setBackgroundColor(Color.parseColor("#d9d9d9"));
+                tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, smallTextSize);
+            }
+            else {
+                tv.setText(row.getBar());
+                tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, miniSize);
+            }
+            // 2列目(商品名)
+            final TextView tv2 = new TextView(this);
+            tv2.setLayoutParams(new
+                    TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
+                    TableRow.LayoutParams.WRAP_CONTENT));
+            tv2.setGravity(Gravity.LEFT);
+            tv2.setPadding(5, 15, 0, 15);
+            if (i == -1) {
+                tv2.setText("商品名");
+                tv2.setBackgroundColor(Color.parseColor("#d9d9d9"));
+                tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, smallTextSize);
+            }
+            else {
+                tv2.setText(row.getStockName());
+                tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, miniSize);
+            }
+            // 3列目(ストック数)
+            final TextView tv3 = new TextView(this);
+            tv3.setLayoutParams(new
+                    TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
+                    TableRow.LayoutParams.WRAP_CONTENT));
+            tv3.setGravity(Gravity.LEFT);
+            tv3.setPadding(5, 15, 0, 15);
+            if (i == -1) {
+                tv3.setText("在庫");
+                tv3.setBackgroundColor(Color.parseColor("#d9d9d9"));
+                tv3.setTextSize(TypedValue.COMPLEX_UNIT_PX, smallTextSize);
+            }
+            else {
+                tv3.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
+                tv3.setText(row.getStock());
+            }
+            // 4列目(更新日)
+            final TextView tv4 = new TextView(this);
+            tv4.setLayoutParams(new
+                    TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
+                    TableRow.LayoutParams.WRAP_CONTENT));
+            tv4.setGravity(Gravity.LEFT);
+            tv4.setPadding(5, 15, 0, 15);
+            if (i == -1) {
+                tv4.setText("リンク");
+                tv4.setBackgroundColor(Color.parseColor("#d9d9d9"));
+                tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX, smallTextSize);
+            }
+            else {
+                String yahoolink = "https://shopping.yahoo.co.jp/search?X=2&sc_i=shp_pc_search_sort_sortitem&p=" + row.getBar();
+
+                tv4.setText("Yahoo");
+                Pattern pattern = Pattern.compile("Yahoo");
+
+                Linkify.TransformFilter filter = new Linkify.TransformFilter() {
+                    @Override
+                    public String transformUrl(Matcher match, String url) {
+                        return yahoolink;
+                    }
+                };
+
+                Linkify.addLinks(tv4, pattern, yahoolink, null, filter);
+                tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX, miniSize);
+
+            }
+            // テーブルに行を追加
+            final TableRow tr = new TableRow(this);
+            tr.setId(i + 1);
+            TableLayout.LayoutParams trParams = new
+                    TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT,
+                    TableLayout.LayoutParams.WRAP_CONTENT);
+            trParams.setMargins(leftRowMargin, topRowMargin, rightRowMargin, bottomRowMargin);
+            tr.setPadding(0,0,0,0);
+            tr.setLayoutParams(trParams);
+            tr.addView(tv);
+            tr.addView(tv2);
+            tr.addView(tv3);
+            tr.addView(tv4);
+            mTableLayout.addView(tr, trParams);
+            // 罫線を追加
+            if (i > -1) {
+                final TableRow trSep = new TableRow(this);
+                TableLayout.LayoutParams trParamsSep = new
+                        TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT,
+                        TableLayout.LayoutParams.WRAP_CONTENT);
+                trParamsSep.setMargins(leftRowMargin, topRowMargin, rightRowMargin, bottomRowMargin);
+                trSep.setLayoutParams(trParamsSep);
+                TextView tvSep = new TextView(this);
+                TableRow.LayoutParams tvSepLay = new
+                        TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,
+                        TableRow.LayoutParams.WRAP_CONTENT);
+                tvSepLay.span = 4;
+                tvSep.setLayoutParams(tvSepLay);
+                tvSep.setBackgroundColor(Color.parseColor("#d9d9d9"));
+                tvSep.setHeight(1);
+                trSep.addView(tvSep);
+                mTableLayout.addView(trSep, trParamsSep);
+            }
+        }
+    }
+
+    class LoadDataTask extends AsyncTask<Integer, Integer, String> {
+        @Override
+        protected String doInBackground(Integer... params) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return "Task Completed.";
+        }
+        @Override
+        protected void onPostExecute(String result) {
+            mProgressBar.hide();
+            loadData();
+        }
+        @Override
+        protected void onPreExecute() {
+        }
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+        }
+    }
 
 }

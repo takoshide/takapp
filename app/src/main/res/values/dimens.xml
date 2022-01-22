@@ -1,3 +1,11 @@
 <resources>
     <dimen name="fab_margin">16dp</dimen>
+    <!-- textSize -->
+    <dimen name="font_size_medium">20dp</dimen>
+    <dimen name="font_size_small">18dp</dimen>
+    <dimen name="font_size_verysmall">12dp</dimen>
+    <dimen name="font_size_veryminismall">8dp</dimen>
+    <!-- padding -->
+    <dimen name="activity_vertical_margin">5dp</dimen>
+    <dimen name="activity_horizontal_margin">5dp</dimen>
 </resources>
