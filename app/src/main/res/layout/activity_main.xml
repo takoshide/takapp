@@ -12,6 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:theme="@style/Theme.Takapp.AppBarOverlay">
+        android:textSize="18sp"
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -39,62 +40,77 @@
         android:layout_height="20dp"
         android:background="@drawable/border"
         android:text="読み取ったバーコードの値が表示されます。"
-        app:layout_constraintBottom_toTopOf="@+id/proname"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintHorizontal_bias="0.21"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/editCount" />
 
     <TextView
         android:id="@+id/count"
-        android:layout_width="120dp"
+        android:layout_width="108dp"
         android:layout_height="40dp"
         android:background="@drawable/border"
         android:text="0"
         android:textAlignment="center"
         android:textSize="24sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintHorizontal_bias="0.078"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView2" />
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
-        android:layout_width="350dp"
-        android:layout_height="40dp"
-        android:background="?attr/colorPrimary"
-        app:layout_constraintBottom_toTopOf="@+id/players_layout"
+        android:layout_width="132dp"
+        android:layout_height="64dp"
+        android:background="?attr/colorControlActivated"
+        android:textAlignment="textEnd"
+        android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.093"
+        app:layout_constraintTop_toBottomOf="@+id/barcode"
+        app:popupTheme="@style/Theme.Takapp.PopupOverlay"
+        app:subtitle="登録済み" />
+
+    <EditText
+        android:id="@+id/proname"
+        android:layout_width="168dp"
+        android:layout_height="64dp"
+        android:maxLength="40"
+        android:text="読み取ったバーコードの商品名が表示されます。"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toStartOf="@+id/toolbar"
+        app:layout_constraintTop_toBottomOf="@+id/barcode" />
+
+    <EditText
+        android:id="@+id/category"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_marginStart="4dp"
+        android:maxLength="12"
+        android:text="分類"
+        app:layout_constraintEnd_toStartOf="@+id/proname"
+        app:layout_constraintHorizontal_bias="0.456"
         app:layout_constraintStart_toStartOf="parent"
-        app:popupTheme="@style/Theme.Takapp.PopupOverlay" />
+        app:layout_constraintTop_toBottomOf="@+id/barcode" />
 
     <Button
         android:id="@+id/insert"
-        style="@style/Widget.MaterialComponents.Button"
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="14dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
+        android:background="#66664444"
         android:onClick="insert"
         android:text="登録"
         android:textAlignment="center"
-        android:textColor="@color/zxinglegacy_contents_text"
-        app:layout_constraintBottom_toTopOf="@+id/proname"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toEndOf="@+id/button2"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.838"
-        app:rippleColor="@color/design_default_color_on_secondary" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
         android:id="@+id/editCount"
-        android:layout_width="100dp"
+        android:layout_width="108dp"
         android:layout_height="40dp"
-        android:layout_marginStart="4dp"
         android:background="@drawable/border"
         android:digits="0123456789"
-        android:ems="10"
         android:inputType="number"
         android:maxLength="5"
         android:text="0"
@@ -104,24 +120,10 @@
         app:layout_constraintStart_toEndOf="@+id/count"
         app:layout_constraintTop_toBottomOf="@+id/textView2" />
 
-    <EditText
-        android:id="@+id/proname"
-        android:layout_width="414dp"
-        android:layout_height="55dp"
-        android:maxLength="50"
-        android:text="読み取ったバーコードの商品名が表示されます。"
-        app:layout_constraintBottom_toTopOf="@+id/toolbar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0" />
-
     <Button
         android:id="@+id/button1"
-        android:layout_width="46dp"
-        android:layout_height="30dp"
-        android:layout_marginStart="8dp"
+        android:layout_width="48dp"
+        android:layout_height="28dp"
         android:onClick="countup"
         android:text="+"
         app:icon="@android:drawable/arrow_up_float"
@@ -130,9 +132,8 @@
 
     <Button
         android:id="@+id/button2"
-        android:layout_width="46dp"
-        android:layout_height="30dp"
-        android:layout_marginStart="8dp"
+        android:layout_width="48dp"
+        android:layout_height="28dp"
         android:onClick="countdown"
         android:text="-"
         app:icon="@android:drawable/arrow_down_float"
@@ -141,13 +142,13 @@
 
     <LinearLayout
         android:id="@+id/players_layout"
-        android:layout_width="350dp"
-        android:layout_height="400dp"
+        android:layout_width="364dp"
+        android:layout_height="420dp"
         android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintHorizontal_bias="0.492"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar"
         tools:context=".MainActivity">
 
         <ScrollView
@@ -167,8 +168,8 @@
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="72dp"
-        android:text="今回値"
+        android:layout_marginStart="76dp"
+        android:text="増減"
         android:textColor="@color/black"
         app:layout_constraintStart_toEndOf="@+id/textView2"
         tools:layout_editor_absoluteY="0dp" />
@@ -177,8 +178,8 @@
         android:id="@+id/textView2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:text="今の在庫数"
+        android:layout_marginStart="56dp"
+        android:text="現在庫"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

@@ -39,9 +39,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.takfireapp.takapp.databinding.ActivityMainBinding;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -92,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(mContext, "CAMERA PERMISSION_GRANTED", Toast.LENGTH_LONG).show();  // "CAMERA PERMISSION_GRANTED"と表示.
                 }
                 else{   // 拒否.
-                    Toast.makeText(mContext, "CAMERA Not PERMISSION_GRANTED", Toast.LENGTH_LONG).show();  // "CAMERA Not PERMISSION_GRANTED"と表示.
+                    Toast.makeText(mContext, "カメラの使用許可を設定してください。", Toast.LENGTH_LONG).show();  // "CAMERA Not PERMISSION_GRANTED"と表示.
                 }
 
                 IntentIntegrator integrator = new IntentIntegrator(MainActivity.this);
@@ -162,30 +160,8 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(mContext, "NG" , Toast.LENGTH_LONG).show();
             } else {
                 Log.d("MainActivity", "Scanned");
-                Toast.makeText(mContext, result.getContents(), Toast.LENGTH_LONG).show();
 
-//                setContentView(R.layout.activity_main);
-                //読み取ったバーコードを表示する
-                TextView barcode = findViewById(R.id.barcode);
-                barcode.setText(String.valueOf(result.getContents()));
-
-                //バーコードに該当する個数を表示する
-                TextView count = findViewById(R.id.count);
-                String stock = selectDataBarcode(db,result.getContents());
-                if("".equals(stock)) {
-                    count.setText("0");
-                }else{
-                    count.setText(stock);
-                }
-
-                //1個数を表示する
-                EditText editCount = findViewById(R.id.editCount);
-                editCount.setText("1");
-
-                //Yahooに接続
-                Yahoo yr =  new Yahoo();
-                AsyncHttpRequest task = new AsyncHttpRequest(this);
-                task.execute(yr.getYahooUrl(result.getContents()));
+                selectBar(result.getContents());
 
             }
         } else {
@@ -193,6 +169,35 @@ public class MainActivity extends AppCompatActivity {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
+
+    public void selectBar(String result){
+        Toast.makeText(mContext, result, Toast.LENGTH_LONG).show();
+
+//                setContentView(R.layout.activity_main);
+        //読み取ったバーコードを表示する
+        TextView barcode = findViewById(R.id.barcode);
+        barcode.setText(String.valueOf(result));
+
+        //バーコードに該当する個数を表示する
+        TextView count = findViewById(R.id.count);
+        String stock = selectDataBarcode(db,result);
+        if("".equals(stock)) {
+            count.setText("0");
+        }else{
+            count.setText(stock);
+        }
+
+        //1個数を表示する
+        EditText editCount = findViewById(R.id.editCount);
+        editCount.setText("1");
+
+        //Yahooに接続
+        Yahoo yr =  new Yahoo();
+        AsyncHttpRequest task = new AsyncHttpRequest(this);
+        task.execute(yr.getYahooUrl(result));
+
+    }
+
 
     //読み取った項目のクリア
     public void clear(){
@@ -204,6 +209,12 @@ public class MainActivity extends AppCompatActivity {
         editCount.setText("0");
         EditText proname = findViewById(R.id.proname);
         proname.setText("読み取ったバーコードの商品名が表示されます。");
+        proname.setTextColor(Color.BLACK);
+        proname.setTextSize(14.0f);
+        EditText category = findViewById(R.id.category);
+        category.setText("分類名");
+        category.setTextColor(Color.BLACK);
+        category.setTextSize(16.0f);
     }
 
     @Override
@@ -272,6 +283,8 @@ public class MainActivity extends AppCompatActivity {
         CharSequence ceditCount = ((TextView) findViewById(R.id.editCount)).getText().toString();
         //商品名
         String product = ((TextView) findViewById(R.id.proname)).getText().toString();
+        //カテゴリ名
+        String category = ((TextView) findViewById(R.id.category)).getText().toString();
 
         if(barcode == null || count == null){
             return;
@@ -298,10 +311,10 @@ public class MainActivity extends AppCompatActivity {
 
         String sum = String.valueOf(isum);
 
-        long recodeCount = DatabaseUtils.queryNumEntries(db, helper.TABLE_NAME,"barcord = ?",new String[]{barcode});
+        long recodeCount = DatabaseUtils.queryNumEntries(db, helper.TABLE_NAME,"barcode = ?",new String[]{barcode});
 
         if(recodeCount == 0) {
-            insertData(db, barcode, sum, product);
+            insertData(db, barcode, sum, product, category);
         }else {
             updateData(db, barcode, sum);
         }
@@ -316,15 +329,17 @@ public class MainActivity extends AppCompatActivity {
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     //データベースへ挿入するメソッド
     public void insertData(SQLiteDatabase db,
-                           String barcorde,
+                           String barcode,
                            String count,
-                           String product) {
+                           String product,
+                           String category) {
 
         if(!"0".equals(count) ) {
             ContentValues values = new ContentValues();
-            values.put(helper.COLUMN_NAME_BARCODE, barcorde);
+            values.put(helper.COLUMN_NAME_BARCODE, barcode);
             values.put(helper.COLUMN_NAME_COUNT, count);
             values.put(helper.COLUMN_NAME_PRODUCT, product);
+            values.put(helper.COLUMN_NAME_CATEGORY, category);
             db.insert(helper.TABLE_NAME, null, values);
         }
     }
@@ -332,7 +347,7 @@ public class MainActivity extends AppCompatActivity {
 
     //データベースへ更新するメソッド
     public void updateData(SQLiteDatabase db,
-                           String barcorde,
+                           String barcode,
                            String count
                            ) {
 // New value for one column
@@ -342,7 +357,7 @@ public class MainActivity extends AppCompatActivity {
 
 // Which row to update, based on the title
         String selection = helper.COLUMN_NAME_BARCODE + " LIKE ?";
-        String[] selectionArgs = { barcorde };
+        String[] selectionArgs = { barcode };
 
         db.update(helper.TABLE_NAME,values,selection,selectionArgs);
     }
@@ -371,9 +386,10 @@ public class MainActivity extends AppCompatActivity {
             for (int i = 0; i < cursor.getCount(); i++) {
                 Date now = new Date();
                 stockData[i] = new StockData(
-                        cursor.getString(0),
+                        cursor.getString(3),
                         cursor.getString(2),
                         cursor.getString(1),
+                        cursor.getString(0),
                         new Date(now.getYear(),now.getMonth(),now.getDay()));
 
                 cursor.moveToNext();
@@ -391,7 +407,7 @@ public class MainActivity extends AppCompatActivity {
 
     //データベースを読み込むメソッド
     public String  selectDataBarcode(SQLiteDatabase db,
-                                     String barcorde) {
+                                     String barcode) {
         if (helper == null) {
             helper = new Bardb(getApplicationContext());
         }
@@ -403,11 +419,11 @@ public class MainActivity extends AppCompatActivity {
             cursor = db.query(
                     helper.TABLE_NAME,
                     new String[]{ "count" },
-                    "barcord = ?",
-                    new String[]{ barcorde },
+                    "barcode = ?",
+                    new String[]{ barcode },
                     null,
                     null,
-                    null );
+                    "barcode asc" );
 
             // まず、Cursorからcountカラム
             // 取り出すためのインデクス値を確認しておく
@@ -445,14 +461,16 @@ public class MainActivity extends AppCompatActivity {
         int topRowMargin=0;
         int rightRowMargin=0;
         int bottomRowMargin = 0;
-        int miniSize = 0,textSize = 0, smallTextSize =0, mediumTextSize = 0;
-        miniSize =(int) getResources().getDimension(R.dimen.font_size_veryminismall);
-        textSize = (int) getResources().getDimension(R.dimen.font_size_verysmall);
-        smallTextSize = (int) getResources().getDimension(R.dimen.font_size_small);
-        mediumTextSize = (int) getResources().getDimension(R.dimen.font_size_medium);
+        int font_size_10dp = 0, font_size_12dp = 0, font_size_14dp = 0, font_size_16dp = 0, font_size_18dp =0, font_size_20dp = 0;
+        font_size_10dp =(int) getResources().getDimension(R.dimen.font_size_veryminismall);
+        font_size_12dp = (int) getResources().getDimension(R.dimen.font_size_verysmall);
+        font_size_14dp = (int) getResources().getDimension(R.dimen.font_size_asmall);
+        font_size_16dp = (int) getResources().getDimension(R.dimen.font_size_littlesmall);
+        font_size_18dp = (int) getResources().getDimension(R.dimen.font_size_small);
+        font_size_20dp = (int) getResources().getDimension(R.dimen.font_size_medium);
 
         int rows = stockData.length;
-        getSupportActionBar().setTitle("登録済み商品数：" + String.valueOf(rows));
+        getSupportActionBar().setTitle(String.valueOf(rows)+ "件");
         TextView textSpacer = null;
         mTableLayout.removeAllViews();
         // -1 はヘッダー行
@@ -467,7 +485,10 @@ public class MainActivity extends AppCompatActivity {
                 textSpacer = new TextView(this);
                 textSpacer.setText("");
             }
-            // 1列目(CODE)
+            //バーコードデータ
+            final TextView tv0 = new TextView(this);
+
+            // 1列目(カテゴリ)
             final TextView tv = new TextView(this);
             tv.setLayoutParams(new
                     TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
@@ -475,15 +496,23 @@ public class MainActivity extends AppCompatActivity {
             tv.setGravity(Gravity.LEFT);
             tv.setPadding(5, 15, 0, 15);
             if (i == -1) {
-                tv.setText("ﾊﾞｰｺｰﾄﾞ");
+                tv.setText("分類");
                 tv.setBackgroundColor(Color.parseColor("#d9d9d9"));
-                tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, smallTextSize);
+                tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_18dp);
             }
             else {
-                tv.setText(row.getBar());
-                tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, miniSize);
+                tv0.setText(row.getBar());
+                tv.setText(row.getcategory());
+                tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_10dp);
+                tv.setClickable(true);
+                tv.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View v) {
+                        selectBar(tv0.getText().toString());
+                    }
+                });
             }
-            // 2列目(商品名)
+
+                // 2列目(商品名)
             final TextView tv2 = new TextView(this);
             tv2.setLayoutParams(new
                     TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
@@ -493,13 +522,13 @@ public class MainActivity extends AppCompatActivity {
             if (i == -1) {
                 tv2.setText("商品名");
                 tv2.setBackgroundColor(Color.parseColor("#d9d9d9"));
-                tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, smallTextSize);
+                tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_18dp);
             }
             else {
                 tv2.setText(row.getStockName());
-                tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, miniSize);
+                tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_10dp);
             }
-            // 3列目(ストック数)
+            // 3列目(在庫数)
             final TextView tv3 = new TextView(this);
             tv3.setLayoutParams(new
                     TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
@@ -509,13 +538,14 @@ public class MainActivity extends AppCompatActivity {
             if (i == -1) {
                 tv3.setText("在庫");
                 tv3.setBackgroundColor(Color.parseColor("#d9d9d9"));
-                tv3.setTextSize(TypedValue.COMPLEX_UNIT_PX, smallTextSize);
+                tv3.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_18dp);
             }
             else {
-                tv3.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
-                tv3.setText(row.getStock());
+                tv3.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_16dp);
+                tv3.setGravity(Gravity.CENTER);
+                tv3.setText("\n" + row.getStock());
             }
-            // 4列目(更新日)
+            // 4列目(リンク)
             final TextView tv4 = new TextView(this);
             tv4.setLayoutParams(new
                     TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
@@ -525,23 +555,41 @@ public class MainActivity extends AppCompatActivity {
             if (i == -1) {
                 tv4.setText("リンク");
                 tv4.setBackgroundColor(Color.parseColor("#d9d9d9"));
-                tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX, smallTextSize);
+                tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_18dp);
             }
             else {
-                String yahoolink = "https://shopping.yahoo.co.jp/search?X=2&sc_i=shp_pc_search_sort_sortitem&p=" + row.getBar();
+                String yahoolink = "https://shopping.yahoo.co.jp/search?X=2&sc_i=shp_sp_search_sort_sortitem&p=" + row.getBar();
+                String amazonlink = "https://www.amazon.co.jp/s?s=price-asc-rank&k=" + row.getBar();
+                String rakutenlink = "https://search.rakuten.co.jp/search/mall/" + row.getBar() + "?S=2";
 
-                tv4.setText("Yahoo");
-                Pattern pattern = Pattern.compile("Yahoo");
-
+                tv4.setText("yahoo"+"\n"+"amazon"+"\n"+"rakuten");
+                tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_14dp);
+                Pattern pattern = Pattern.compile("yahoo");
+                Pattern pattern2 = Pattern.compile("amazon");
+                Pattern pattern3 = Pattern.compile("rakuten");
                 Linkify.TransformFilter filter = new Linkify.TransformFilter() {
                     @Override
                     public String transformUrl(Matcher match, String url) {
                         return yahoolink;
                     }
                 };
+                Linkify.TransformFilter filter2 = new Linkify.TransformFilter() {
+                    @Override
+                    public String transformUrl(Matcher match, String url) {
+                        return amazonlink;
+                    }
+                };
+                Linkify.TransformFilter filter3 = new Linkify.TransformFilter() {
+                    @Override
+                    public String transformUrl(Matcher match, String url) {
+                        return rakutenlink;
+                    }
+                };
 
                 Linkify.addLinks(tv4, pattern, yahoolink, null, filter);
-                tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX, miniSize);
+                Linkify.addLinks(tv4, pattern2, amazonlink, null, filter2);
+                Linkify.addLinks(tv4, pattern3, rakutenlink, null, filter3);
+
 
             }
             // テーブルに行を追加

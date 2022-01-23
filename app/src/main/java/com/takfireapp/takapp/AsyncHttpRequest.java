@@ -70,11 +70,20 @@ public class AsyncHttpRequest extends AsyncTask<String, Void, String> {
 
         // 取得した結果をEditTextに入れる
         EditText tv = (EditText) mainActivity.findViewById(R.id.proname);
+        EditText tv_category = (EditText) mainActivity.findViewById(R.id.category);
+
+        float font_size_10dp = 0, font_size_12dp = 0, font_size_16dp = 0, font_size_18dp =0, font_size_20dp = 0;
+        font_size_10dp =(float) 10.0f;
+        font_size_12dp = (float) 12.0f;
+        font_size_16dp = (float) 16.0f;
+        font_size_18dp = (float) 18.0f;
+        font_size_20dp = (float) 20.0f;
 
         JsonFactory factory = new JsonFactory();
         try {
             JsonParser parser = factory.createParser(result);
             ArrayList<String> title = new ArrayList<>();
+            ArrayList<String> category = new ArrayList<>();
             int i = 0;
             boolean break_flag = false;
             while (parser.nextToken() != JsonToken.END_OBJECT) {
@@ -88,8 +97,18 @@ public class AsyncHttpRequest extends AsyncTask<String, Void, String> {
                         Log.d("name", name);
                         if (name.equals("name")) {
                             title.add(parser.getText());
-                            break_flag = true;
                             break;
+                        }else if(name.equals("genreCategory")){
+                            parser.nextToken();
+                            parser.nextToken();
+                            name = parser.getCurrentName();
+                            parser.nextToken();
+                            if (name.equals("name")) {
+                                category.add(parser.getText());
+                                break_flag = true;
+                                break;
+                            }
+
                         }else if(name.equals("totalResultsAvailable")){
                             if("0".equals(parser.getText())){
                                 break_flag = true;
@@ -102,23 +121,52 @@ public class AsyncHttpRequest extends AsyncTask<String, Void, String> {
                     }
                 }
             }
+
+
             String titles = "";
+
             if(title.size() == 0) {
                 titles = "商品名が見つかりませんでした。ここから40文字まで登録できます。";
             }else{
                 titles = title.get(0);
             }
-                tv.setTextSize(12.0f);
 
+
+            tv.setTextColor(Color.BLUE);
                 int size = titles.length();
 
-                if (size < 20) {
+                if (size < 14) {
                     tv.setText(titles.substring(0, size));
-                } else if (size < 40) {
-                    tv.setText(titles.substring(0, 20) + "\n" + titles.substring(20, size));
+                    tv.setTextSize(font_size_16dp);
+                } else if (size < 27) {
+                    tv.setText(titles.substring(0, 13) + "\n" + titles.substring(13, size));
+                    tv.setTextSize(font_size_12dp);
                 } else {
-                    tv.setText(titles.substring(0, 20) + "\n" + titles.substring(20, 40));
+                    tv.setText(titles.substring(0, 13) + "\n" + titles.substring(13, 26) + "\n" + titles.substring(26, size));
+                    tv.setTextSize(font_size_10dp);
                 }
+            String categorys = "";
+
+            if(title.size() == 0) {
+                categorys = "分類不明";
+            }else{
+                categorys = category.get(0);
+            }
+            ;
+            tv_category.setTextColor(Color.BLUE);
+
+            int size2 = categorys.length();
+
+            if (size2 < 5) {
+                tv_category.setText(categorys.substring(0, size2));
+                tv_category.setTextSize(font_size_16dp);
+            } else if (size2 < 9) {
+                tv_category.setText(categorys.substring(0, 4) + "\n" + categorys.substring(4, size2));
+                tv_category.setTextSize(font_size_12dp);
+            } else {
+                tv_category.setText(categorys.substring(0, 4) + "\n" + categorys.substring(4, 8)+ "\n" + categorys.substring(8, size2));
+                tv_category.setTextSize(font_size_10dp);
+            }
 
 
         } catch (JsonParseException e) {
@@ -126,11 +174,17 @@ public class AsyncHttpRequest extends AsyncTask<String, Void, String> {
             tv.setText("バーコードの読み取りでエラーが発生しました。在庫の登録ができません。");
             tv.setTextSize(12.0f);
             tv.setTextColor(Color.RED);
+            tv_category.setText("分類不明");
+            tv_category.setTextSize(font_size_12dp);
+            tv_category.setTextColor(Color.RED);
         } catch (IOException e) {
             // TODO 自動生成された catch ブロック
             tv.setText("バーコードの読み取りでエラーが発生しました。在庫の登録ができません。");
             tv.setTextSize(12.0f);
             tv.setTextColor(Color.RED);
+            tv_category.setText("分類不明");
+            tv_category.setTextSize(font_size_12dp);
+            tv_category.setTextColor(Color.RED);
         }
 
     }

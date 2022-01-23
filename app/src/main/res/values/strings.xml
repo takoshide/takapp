@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">takapp</string>
+    <string name="action_settings_del">1件削除</string>
     <string name="action_settings">初期化</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
