@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private Bardb helper;
     private SQLiteDatabase db;
-    Context mContext = null;	// mContextをnullで初期化.
+    Context mContext = null;	// mContextをnullで初期化
     InputMethodManager inputMethodManager;
     private TableLayout mTableLayout;
     ProgressDialog mProgressBar;
@@ -69,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
         // mContextに自身をセット.
         mContext = this;	// mContextにthisを格納.
 
-//        setContentView(R.layout.activity_main);
         mProgressBar = new ProgressDialog(this);
         mTableLayout = (TableLayout) findViewById(R.id.tablePlayers);
         mTableLayout.setStretchAllColumns(true);
@@ -87,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
 
                 if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){    // 許可.
-                    Toast.makeText(mContext, "CAMERA PERMISSION_GRANTED", Toast.LENGTH_LONG).show();  // "CAMERA PERMISSION_GRANTED"と表示.
+//                    Toast.makeText(mContext, "CAMERA PERMISSION_GRANTED", Toast.LENGTH_LONG).show();  // "CAMERA PERMISSION_GRANTED"と表示.
                 }
                 else{   // 拒否.
                     Toast.makeText(mContext, "カメラの使用許可を設定してください。", Toast.LENGTH_LONG).show();  // "CAMERA Not PERMISSION_GRANTED"と表示.
@@ -95,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
 
                 IntentIntegrator integrator = new IntentIntegrator(MainActivity.this);
                 integrator.setDesiredBarcodeFormats(IntentIntegrator.ONE_D_CODE_TYPES);
-                integrator.setPrompt("Scan a barcode");
+                integrator.setPrompt("バーコードをスキャンしてください。");
                 integrator.setResultDisplayDuration(0);
                 integrator.setWide();
                 integrator.setCameraId(0);
@@ -173,7 +172,6 @@ public class MainActivity extends AppCompatActivity {
     public void selectBar(String result){
         Toast.makeText(mContext, result, Toast.LENGTH_LONG).show();
 
-//                setContentView(R.layout.activity_main);
         //読み取ったバーコードを表示する
         TextView barcode = findViewById(R.id.barcode);
         barcode.setText(String.valueOf(result));
@@ -198,8 +196,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-    //読み取った項目のクリア
+    //項目のクリア
     public void clear(){
         TextView barcode = findViewById(R.id.barcode);
         barcode.setText("読み取ったバーコードの値が表示されます。");
@@ -234,6 +231,12 @@ public class MainActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             delete();
+            clear();
+            selectData();
+            return true;
+        }else if (id == R.id.action_settings_del) {
+            TextView barcode = findViewById(R.id.barcode);
+            deleteData(barcode.getText().toString());
             clear();
             selectData();
             return true;
@@ -310,7 +313,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         String sum = String.valueOf(isum);
-
         long recodeCount = DatabaseUtils.queryNumEntries(db, helper.TABLE_NAME,"barcode = ?",new String[]{barcode});
 
         if(recodeCount == 0) {
@@ -320,7 +322,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         selectData();
-
         //表示クリア
         clear();
 
@@ -344,18 +345,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     //データベースへ更新するメソッド
     public void updateData(SQLiteDatabase db,
                            String barcode,
                            String count
                            ) {
-// New value for one column
-        String title = "MyNewTitle";
         ContentValues values = new ContentValues();
         values.put(helper.COLUMN_NAME_COUNT, count);
 
-// Which row to update, based on the title
         String selection = helper.COLUMN_NAME_BARCODE + " LIKE ?";
         String[] selectionArgs = { barcode };
 
@@ -442,6 +439,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //１件削除するメソッド
+    public void deleteData(String barcode
+    ) {
+        String selection = helper.COLUMN_NAME_BARCODE + " LIKE ?";
+        String[] selectionArgs = { barcode };
+
+        db.delete(helper.TABLE_NAME,selection,selectionArgs);
+    }
+
     //テーブルデータ削除
     public void delete(){
         db.delete(helper.TABLE_NAME, null, null);
@@ -504,6 +510,7 @@ public class MainActivity extends AppCompatActivity {
                 tv0.setText(row.getBar());
                 tv.setText(row.getcategory());
                 tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_10dp);
+                tv.setTextColor(Color.RED);
                 tv.setClickable(true);
                 tv.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View v) {
@@ -558,9 +565,9 @@ public class MainActivity extends AppCompatActivity {
                 tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_18dp);
             }
             else {
-                String yahoolink = "https://shopping.yahoo.co.jp/search?X=2&sc_i=shp_sp_search_sort_sortitem&p=" + row.getBar();
+                String yahoolink = "https://shopping.yahoo.co.jp/search?sc_i=shp_sp_search_sort_sortitem&p=" + row.getBar();
                 String amazonlink = "https://www.amazon.co.jp/s?s=price-asc-rank&k=" + row.getBar();
-                String rakutenlink = "https://search.rakuten.co.jp/search/mall/" + row.getBar() + "?S=2";
+                String rakutenlink = "https://search.rakuten.co.jp/search/mall/" + row.getBar();
 
                 tv4.setText("yahoo"+"\n"+"amazon"+"\n"+"rakuten");
                 tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_14dp);
@@ -570,7 +577,7 @@ public class MainActivity extends AppCompatActivity {
                 Linkify.TransformFilter filter = new Linkify.TransformFilter() {
                     @Override
                     public String transformUrl(Matcher match, String url) {
-                        return yahoolink;
+                        return yahoolink + "&X=2";
                     }
                 };
                 Linkify.TransformFilter filter2 = new Linkify.TransformFilter() {
@@ -582,15 +589,12 @@ public class MainActivity extends AppCompatActivity {
                 Linkify.TransformFilter filter3 = new Linkify.TransformFilter() {
                     @Override
                     public String transformUrl(Matcher match, String url) {
-                        return rakutenlink;
+                        return rakutenlink + "?s=2";
                     }
                 };
-
                 Linkify.addLinks(tv4, pattern, yahoolink, null, filter);
                 Linkify.addLinks(tv4, pattern2, amazonlink, null, filter2);
                 Linkify.addLinks(tv4, pattern3, rakutenlink, null, filter3);
-
-
             }
             // テーブルに行を追加
             final TableRow tr = new TableRow(this);
@@ -632,7 +636,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(Integer... params) {
             try {
-                Thread.sleep(500);
+                Thread.sleep(200);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

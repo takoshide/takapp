@@ -38,6 +38,7 @@
         android:id="@+id/barcode"
         android:layout_width="300dp"
         android:layout_height="20dp"
+        android:layout_marginTop="4dp"
         android:background="@drawable/border"
         android:text="読み取ったバーコードの値が表示されます。"
         app:layout_constraintEnd_toEndOf="parent"
@@ -47,14 +48,14 @@
 
     <TextView
         android:id="@+id/count"
-        android:layout_width="108dp"
+        android:layout_width="88dp"
         android:layout_height="40dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="4dp"
         android:background="@drawable/border"
         android:text="0"
         android:textAlignment="center"
         android:textSize="24sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.078"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView2" />
 
@@ -62,33 +63,33 @@
         android:id="@+id/toolbar"
         android:layout_width="132dp"
         android:layout_height="64dp"
-        android:background="?attr/colorControlActivated"
+        android:background="?android:attr/autofilledHighlight"
         android:textAlignment="textEnd"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/barcode"
+        app:layout_constraintStart_toEndOf="@+id/button1"
         app:popupTheme="@style/Theme.Takapp.PopupOverlay"
-        app:subtitle="登録済み" />
+        app:subtitle="登録済み"
+        tools:layout_editor_absoluteY="0dp" />
 
     <EditText
         android:id="@+id/proname"
-        android:layout_width="168dp"
+        android:layout_width="172dp"
         android:layout_height="64dp"
+        android:layout_marginStart="16dp"
         android:maxLength="40"
         android:text="読み取ったバーコードの商品名が表示されます。"
         android:textSize="14sp"
-        app:layout_constraintEnd_toStartOf="@+id/toolbar"
+        app:layout_constraintStart_toEndOf="@+id/category"
         app:layout_constraintTop_toBottomOf="@+id/barcode" />
 
     <EditText
         android:id="@+id/category"
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:layout_marginStart="4dp"
+        android:layout_marginStart="24dp"
         android:maxLength="12"
         android:text="分類"
-        app:layout_constraintEnd_toStartOf="@+id/proname"
-        app:layout_constraintHorizontal_bias="0.456"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/barcode" />
 
@@ -96,18 +97,18 @@
         android:id="@+id/insert"
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginStart="16dp"
         android:background="#66664444"
         android:onClick="insert"
         android:text="登録"
         android:textAlignment="center"
-        app:layout_constraintStart_toEndOf="@+id/button2"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:textColor="@color/design_default_color_primary_dark"
+        app:layout_constraintStart_toEndOf="@+id/proname"
+        app:layout_constraintTop_toBottomOf="@+id/barcode" />
 
     <EditText
         android:id="@+id/editCount"
-        android:layout_width="108dp"
+        android:layout_width="88dp"
         android:layout_height="40dp"
         android:background="@drawable/border"
         android:digits="0123456789"
@@ -121,24 +122,25 @@
         app:layout_constraintTop_toBottomOf="@+id/textView2" />
 
     <Button
-        android:id="@+id/button1"
-        android:layout_width="48dp"
-        android:layout_height="28dp"
-        android:onClick="countup"
-        android:text="+"
-        app:icon="@android:drawable/arrow_up_float"
-        app:layout_constraintStart_toEndOf="@+id/editCount"
-        tools:layout_editor_absoluteY="16dp" />
+        android:id="@+id/button2"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/mainasu"
+        android:onClick="countdown"
+        app:layout_constraintStart_toEndOf="@+id/button1"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/button2"
-        android:layout_width="48dp"
-        android:layout_height="28dp"
-        android:onClick="countdown"
-        android:text="-"
-        app:icon="@android:drawable/arrow_down_float"
-        app:layout_constraintStart_toEndOf="@+id/editCount"
-        app:layout_constraintTop_toBottomOf="@+id/button1" />
+        android:id="@+id/button1"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="76dp"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/plus"
+        android:onClick="countup"
+        app:layout_constraintStart_toStartOf="@+id/editCount"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
         android:id="@+id/players_layout"
@@ -146,9 +148,8 @@
         android:layout_height="420dp"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.492"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar"
+        app:layout_constraintTop_toBottomOf="@+id/proname"
         tools:context=".MainActivity">
 
         <ScrollView
@@ -168,8 +169,8 @@
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="76dp"
-        android:text="増減"
+        android:layout_marginStart="8dp"
+        android:text="に　増減を入力し登録"
         android:textColor="@color/black"
         app:layout_constraintStart_toEndOf="@+id/textView2"
         tools:layout_editor_absoluteY="0dp" />
@@ -178,7 +179,7 @@
         android:id="@+id/textView2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="56dp"
+        android:layout_marginStart="44dp"
         android:text="現在庫"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
