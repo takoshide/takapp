@@ -139,10 +139,10 @@ public class AsyncHttpRequest extends AsyncTask<String, Void, String> {
                     tv.setText(titles.substring(0, size));
                     tv.setTextSize(font_size_16dp);
                 } else if (size < 27) {
-                    tv.setText(titles.substring(0, 13) + "\n" + titles.substring(13, size));
+                    tv.setText(titles.substring(0,  size));
                     tv.setTextSize(font_size_12dp);
                 } else {
-                    tv.setText(titles.substring(0, 13) + "\n" + titles.substring(13, 26) + "\n" + titles.substring(26, size));
+                    tv.setText(titles.substring(0, size));
                     tv.setTextSize(font_size_10dp);
                 }
             String categorys = "";
@@ -161,10 +161,10 @@ public class AsyncHttpRequest extends AsyncTask<String, Void, String> {
                 tv_category.setText(categorys.substring(0, size2));
                 tv_category.setTextSize(font_size_16dp);
             } else if (size2 < 9) {
-                tv_category.setText(categorys.substring(0, 4) + "\n" + categorys.substring(4, size2));
+                tv_category.setText(categorys.substring(0,  size2));
                 tv_category.setTextSize(font_size_12dp);
             } else {
-                tv_category.setText(categorys.substring(0, 4) + "\n" + categorys.substring(4, 8)+ "\n" + categorys.substring(8, size2));
+                tv_category.setText(categorys.substring(0, size2));
                 tv_category.setTextSize(font_size_10dp);
             }
 

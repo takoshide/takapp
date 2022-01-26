@@ -2,6 +2,7 @@ package com.takfireapp.takapp;
 
 import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.ClipData;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -11,8 +12,12 @@ import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.icu.util.Calendar;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
+import android.text.InputType;
+import android.text.method.ScrollingMovementMethod;
 import android.text.util.Linkify;
 import android.util.Log;
 import android.util.TypedValue;
@@ -24,6 +29,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -32,6 +38,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ShareCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.DialogFragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -41,11 +48,16 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.takfireapp.takapp.databinding.ActivityMainBinding;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SimpleDialogFragment.SimpleDialogListener{
 
 
     private AppBarConfiguration appBarConfiguration;
@@ -53,11 +65,22 @@ public class MainActivity extends AppCompatActivity {
     public Bardb helper;
     public SQLiteDatabase db;
     Context mContext = null;	// mContextをnullで初期化
+    InputMethodManager inputMethodManagerCount;
     InputMethodManager inputMethodManager;
     private TableLayout mTableLayout;
     ProgressDialog mProgressBar;
 
+    static final int BARCODE_READ = 49374;
+
     StockData[] stockData = new StockData[99];
+
+    //ファイルアクセスここから
+    static final int REQUEST_OPEN_FILE = 1001;
+    static final int REQUEST_CREATE_FILE = 1002;
+    static final int REQUEST_DELETE_FILE = 1003;
+    enum Mode {OPEN, CREATE, DELETE};
+    EditText editText;
+    //ファイルアクセスここまで
 
 
     @Override
@@ -80,8 +103,6 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-        //データ部のスクロール表示
-//        ((TextView) findViewById(R.id.alldata)).setMovementMethod(new ScrollingMovementMethod());
 
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -106,28 +127,21 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
-        /* キーボードをEnterで閉じる */
-
-        EditText           editCount;
-//        LinearLayout       mainLayout;
-        //キーボードを閉じたいEditTextオブジェクト
-        editCount           = (EditText) findViewById(R.id.editCount);
+        EditText editCount           = (EditText) findViewById(R.id.editCount);
         editCount.setText("0");
-        //画面全体のレイアウト
-//        mainLayout         = findViewById(R.id.coordinatorLayout);
+
         //キーボード表示を制御するためのオブジェクト
-        inputMethodManager =  (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+        inputMethodManagerCount =  (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
 
         //EditTextにリスナーをセット
         editCount.setOnKeyListener(new View.OnKeyListener() {
-
             //コールバックとしてonKey()メソッドを定義
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 //イベントを取得するタイミングには、ボタンが押されてなおかつエンターキーだったときを指定
                 if((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)){
                     //キーボードを閉じる
-                    inputMethodManager.hideSoftInputFromWindow(editCount.getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+                    inputMethodManagerCount.hideSoftInputFromWindow(editCount.getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
 
                     return true;
                 }
@@ -145,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onTouchEvent(MotionEvent event) {
         //キーボードを隠す
         inputMethodManager.hideSoftInputFromWindow(findViewById(R.id.coordinatorLayout).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-//        inputMethodManager.hideSoftInputFromWindow(findViewById(R.id.alldata).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        inputMethodManager.hideSoftInputFromWindow(findViewById(R.id.players_layout).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         //背景にフォーカスを移す
         findViewById(R.id.coordinatorLayout).requestFocus();
 
@@ -154,22 +168,62 @@ public class MainActivity extends AppCompatActivity {
 
 //読み取ったバーコードの商品名を取得
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-        if(result != null) {
-            if(result.getContents() == null) {
-                Log.d("MainActivity", "Cancelled scan");
-                Toast.makeText(mContext, "NG" , Toast.LENGTH_LONG).show();
+
+        if(requestCode == BARCODE_READ){
+            IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+            if (result != null) {
+                if (result.getContents() == null) {
+                    Log.d("MainActivity", "Cancelled scan");
+                    Toast.makeText(mContext, "NG", Toast.LENGTH_LONG).show();
+                } else {
+                    Log.d("MainActivity", "Scanned");
+
+                    selectBar(result.getContents());
+
+                }
             } else {
-                Log.d("MainActivity", "Scanned");
-
-                selectBar(result.getContents());
-
+                // This is important, otherwise the result will not be passed to the fragment
+                super.onActivityResult(requestCode, resultCode, data);
             }
-        } else {
-            // This is important, otherwise the result will not be passed to the fragment
-            super.onActivityResult(requestCode, resultCode, data);
+        }
+        //ファイルアクセスここから
+        // File load
+        else if (requestCode == REQUEST_OPEN_FILE) {
+            if (resultCode == RESULT_OK && data != null) {
+                Uri uri = data.getData();
+                if (uri != null) {
+                    delete();
+                    csvReader(uri);
+                    selectData();
+                }
+            }
+        }
+        // File delete
+        else if (requestCode == REQUEST_DELETE_FILE) {
+            if (resultCode == RESULT_OK && data != null) {
+                ClipData clipData = data.getClipData();
+                if(clipData==null){  // single selection
+                    Uri uri = data.getData();
+                    deleteUri(uri);
+                }else {  // multiple selection
+                    for (int i = 0; i < clipData.getItemCount(); i++) {
+                        Uri uri = clipData.getItemAt(i).getUri();
+                        deleteUri(uri);
+                    }
+                }
+            }
+        }
+        //ファイルアクセスここまで
+    }
+
+    void deleteUri(Uri uri) {
+        try {
+            DocumentsContract.deleteDocument(getContentResolver(), uri);
+        } catch(FileNotFoundException e){
+            Toast.makeText(this, "Cannot find the file:" + e.toString(), Toast.LENGTH_LONG).show();
         }
     }
+    //ファイルアクセスここまで
 
     public void selectBar(String result){
         Toast.makeText(mContext, result, Toast.LENGTH_LONG).show();
@@ -207,6 +261,9 @@ public class MainActivity extends AppCompatActivity {
         EditText editCount = findViewById(R.id.editCount);
         editCount.setText("0");
         EditText proname = findViewById(R.id.proname);
+        proname.setInputType( InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_NORMAL
+                | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         proname.setText("読み取ったバーコードの商品名が表示されます。");
         proname.setTextColor(Color.BLACK);
         proname.setTextSize(14.0f);
@@ -223,6 +280,19 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    // OKボタン押下時コールバックされて実行される処理
+    @Override
+    public void onDialogPositiveClick(DialogFragment dialog) {
+        delete();
+        clear();
+        selectData();
+    }
+    public void showNoticeDialog() {
+        // Create an instance of the dialog fragment and show it
+        DialogFragment dialog = new SimpleDialogFragment();
+        dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -232,10 +302,12 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            delete();
-            clear();
-            selectData();
+
+            showNoticeDialog();
+
             return true;
+
+
         }else if (id == R.id.action_settings_del) {
             TextView barcode = findViewById(R.id.barcode);
             deleteData(barcode.getText().toString());
@@ -261,8 +333,46 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
+        //ファイルアクセスここから
+        switch (id) {
+            case R.id.action_load:
+                startFileBrowser(Mode.OPEN);
+                return true;
+            case R.id.action_delete:
+                startFileBrowser(Mode.DELETE);
+                return true;
+        }
+        //ファイルアクセスここまで
+
         return super.onOptionsItemSelected(item);
     }
+
+    //ファイルアクセスここから
+    private void startFileBrowser(Mode mode) {
+        Intent intent = null;
+        try {
+            switch (mode) {
+                case OPEN:
+                    intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    intent.setType("text/plain");   //TEXT file only
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    startActivityForResult(Intent.createChooser(intent, "Open a file"), REQUEST_OPEN_FILE);
+                    break;
+                case DELETE:
+                    intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    intent.setType("text/plain");   //TEXT file only
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                    startActivityForResult(Intent.createChooser(intent, "Delete a file"), REQUEST_DELETE_FILE);
+                    break;
+                default:
+            }
+        } catch (android.content.ActivityNotFoundException ex) {
+            // Potentially direct the user to the Market with a Dialog
+            Toast.makeText(this, "Please install a File Browser/Manager", Toast.LENGTH_LONG).show();
+        }
+    }
+    //ファイルアクセスここまで
 
     @Override
     public boolean onSupportNavigateUp() {
@@ -527,8 +637,17 @@ public class MainActivity extends AppCompatActivity {
             }
             else {
                 tv0.setText(row.getBar());
-                tv.setText(row.getcategory());
-                tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_10dp);
+                int size2 = row.getCategory().length();
+                if (size2 < 5) {
+                    tv.setText(row.getCategory().substring(0, size2));
+                    tv.setTextSize(TypedValue.COMPLEX_UNIT_PX,font_size_16dp);
+                } else if (size2 < 9) {
+                    tv.setText(row.getCategory().substring(0, 4) + "\n" + row.getCategory().substring(4, size2));
+                    tv.setTextSize(TypedValue.COMPLEX_UNIT_PX,font_size_12dp);
+                } else {
+                    tv.setText(row.getCategory().substring(0, 4) + "\n" + row.getCategory().substring(4, 8) + "\n" + row.getCategory().substring(8, size2));
+                    tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_10dp);
+                }
                 tv.setTextColor(Color.RED);
                 tv.setClickable(true);
                 tv.setOnClickListener(new View.OnClickListener() {
@@ -551,8 +670,18 @@ public class MainActivity extends AppCompatActivity {
                 tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_18dp);
             }
             else {
-                tv2.setText(row.getStockName());
-                tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_10dp);
+                int size = row.getStockName().length();
+                if (size < 14) {
+                    tv2.setText(row.getStockName().substring(0, size));
+                    tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_16dp);
+                } else if (size < 27) {
+                    tv2.setText(row.getStockName().substring(0, 13) + "\n" + row.getStockName().substring(13, size));
+                    tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_12dp);
+                } else {
+                    tv2.setText(row.getStockName().substring(0, 13) + "\n" + row.getStockName().substring(13, 26) + "\n" + row.getStockName().substring(26, size));
+                    tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_10dp);
+                }
+
             }
             // 3列目(在庫数)
             final TextView tv3 = new TextView(this);
@@ -679,14 +808,13 @@ public class MainActivity extends AppCompatActivity {
         ShareCompat.IntentBuilder builder
                 = ShareCompat.IntentBuilder.from(MainActivity.this);
 
-
-        String subject = "★日用品の在庫リスト★\n"+ getNow() + "時点";
+        String subject = "【" + getNow() +"】日用品の在庫リスト\n";
 
         StringBuilder body = new StringBuilder();
         body.setLength(0);
-        body.append(subject + "\n\n");
+//        body.append(subject + "\n\n");
 
-        body.append("バーコード,カテゴリ,商品名,在庫数\n");
+//        body.append("バーコード,カテゴリ,商品名,在庫数\n");
 
         int rows = stockData.length;
         for(int i = 0; i < rows; i ++) {
@@ -695,7 +823,7 @@ public class MainActivity extends AppCompatActivity {
             row = stockData[i];
             body.append(
                             row.getBar() + "," +
-                            row.getcategory().replaceAll("\\r\\n|\\r|\\n", "") + "," +
+                            row.getCategory().replaceAll("\\r\\n|\\r|\\n", "") + "," +
                             row.getStockName().replaceAll("\\r\\n|\\r|\\n", "") + "," +
                             row.getStock() + "\n"
             );
@@ -709,6 +837,34 @@ public class MainActivity extends AppCompatActivity {
         /// 結果を受け取らずに起動
         builder.startChooser();
     }
+
+    // CSVファイルの読み込み
+    public void csvReader(Uri uri) {
+//            AssetManager assetManager = context.getResources().getAssets();
+        try {
+            if (uri.getScheme().equals("content")) {
+                InputStream inputStream = getContentResolver().openInputStream(uri);
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                BufferedReader bufferReader = new BufferedReader(inputStreamReader);
+                String line;
+
+                while ((line = bufferReader.readLine()) != null) {
+
+                    //カンマ区切りで１つづつ配列に入れる
+                    String[] RowData = line.split(",");
+
+                    insertData(db, RowData[0], RowData[3], RowData[2], RowData[1]);
+
+                }
+                bufferReader.close();
+            }
+        } catch(FileNotFoundException e){
+            e.printStackTrace();
+        } catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
 
     public String getNow(){
 

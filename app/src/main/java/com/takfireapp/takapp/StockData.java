@@ -25,7 +25,7 @@ public class StockData {
     public String getBar() {
         return _bar;
     }
-    public String getcategory() {
+    public String getCategory() {
         return _category;
     }
     public String getStockName() {

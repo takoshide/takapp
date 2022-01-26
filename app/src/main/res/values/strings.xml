@@ -1,8 +1,10 @@
 <resources>
     <string name="app_name">takapp</string>
-    <string name="action_settings_del">1件削除</string>
-    <string name="action_settings">初期化</string>
+    <string name="action_settings_del">登録データ１件削除</string>
+    <string name="action_settings">登録データ全件削除</string>
     <string name="action_backup">バックアップ</string>
+    <string name="action_restore">バックアップから復元</string>
+    <string name="action_file_delete">バックアップファイル削除</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>
@@ -12,4 +14,6 @@
     <string name="hello_first_fragment">Hello first fragment</string>
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
     <string name="stock">在庫数</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
