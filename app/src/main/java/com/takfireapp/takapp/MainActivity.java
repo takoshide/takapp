@@ -10,6 +10,7 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.icu.util.Calendar;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.util.Linkify;
@@ -29,6 +30,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ShareCompat;
 import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -48,8 +50,8 @@ public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
-    private Bardb helper;
-    private SQLiteDatabase db;
+    public Bardb helper;
+    public SQLiteDatabase db;
     Context mContext = null;	// mContextをnullで初期化
     InputMethodManager inputMethodManager;
     private TableLayout mTableLayout;
@@ -239,6 +241,23 @@ public class MainActivity extends AppCompatActivity {
             deleteData(barcode.getText().toString());
             clear();
             selectData();
+            return true;
+        }else if (id == R.id.action_settings_backup) {
+
+//            Intent sendIntent = new Intent(Intent.ACTION_SEND);
+//            sendIntent.putExtra(Intent.EXTRA_TEXT, "Hello!");
+//
+//            // (Optional) Here we're setting the title of the content
+//            sendIntent.putExtra(Intent.EXTRA_TITLE, "Send message");
+//
+//            // (Optional) Here we're passing a content URI to an image to be displayed
+//            sendIntent.setData(contentUri);
+//            sendIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//
+//            // Show the Sharesheet
+//            startActivity(Intent.createChooser(sendIntent, null));
+
+            openChooserToShareThisApp();
             return true;
         }
 
@@ -653,6 +672,63 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onProgressUpdate(Integer... values) {
         }
+    }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void openChooserToShareThisApp() {
+        ShareCompat.IntentBuilder builder
+                = ShareCompat.IntentBuilder.from(MainActivity.this);
+
+
+        String subject = "★日用品の在庫リスト★\n"+ getNow() + "時点";
+
+        StringBuilder body = new StringBuilder();
+        body.setLength(0);
+        body.append(subject + "\n\n");
+
+        body.append("バーコード,カテゴリ,商品名,在庫数\n");
+
+        int rows = stockData.length;
+        for(int i = 0; i < rows; i ++) {
+
+            StockData row = null;
+            row = stockData[i];
+            body.append(
+                            row.getBar() + "," +
+                            row.getcategory().replaceAll("\\r\\n|\\r|\\n", "") + "," +
+                            row.getStockName().replaceAll("\\r\\n|\\r|\\n", "") + "," +
+                            row.getStock() + "\n"
+            );
+        }
+        String bodyText = body.toString();
+        builder.setSubject(subject) /// 件名
+                .setText(bodyText)  /// 本文
+                .setType("text/plain");
+        Intent intent = builder.createChooserIntent();
+
+        /// 結果を受け取らずに起動
+        builder.startChooser();
+    }
+
+    public String getNow(){
+
+        //日付の設定
+        StringBuilder today = new StringBuilder();
+        today.setLength(0);
+        Calendar dd = Calendar.getInstance();
+        today.append(dd.get(Calendar.YEAR));
+        today.append("年");
+        today.append(dd.get(Calendar.MONTH) + 1);
+        today.append("月");
+        today.append(dd.get(Calendar.DAY_OF_MONTH));
+        today.append("日 ");
+        today.append(dd.get(Calendar.HOUR));
+        today.append("時");
+        today.append(dd.get(Calendar.MINUTE));
+        today.append("分");
+
+        return today.toString();
+
     }
 
 }
