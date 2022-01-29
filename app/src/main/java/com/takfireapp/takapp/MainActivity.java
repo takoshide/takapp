@@ -158,8 +158,8 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
      */
     public boolean onTouchEvent(MotionEvent event) {
         //キーボードを隠す
-        inputMethodManager.hideSoftInputFromWindow(findViewById(R.id.coordinatorLayout).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-        inputMethodManager.hideSoftInputFromWindow(findViewById(R.id.players_layout).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        inputMethodManagerCount.hideSoftInputFromWindow(findViewById(R.id.coordinatorLayout).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+        inputMethodManagerCount.hideSoftInputFromWindow(findViewById(R.id.players_layout).getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         //背景にフォーカスを移す
         findViewById(R.id.coordinatorLayout).requestFocus();
 
