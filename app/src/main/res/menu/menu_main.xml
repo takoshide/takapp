@@ -28,4 +28,9 @@
         android:orderInCategory="600"
         android:title="@string/action_file_delete"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_clear"
+        android:orderInCategory="700"
+        android:title="@string/action_clear"
+        app:showAsAction="never" />
 </menu>

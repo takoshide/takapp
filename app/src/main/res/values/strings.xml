@@ -5,6 +5,7 @@
     <string name="action_backup">バックアップ</string>
     <string name="action_restore">バックアップから復元</string>
     <string name="action_file_delete">バックアップファイル削除</string>
+    <string name="action_clear">表示クリア</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>

@@ -17,7 +17,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.text.InputType;
-import android.text.method.ScrollingMovementMethod;
 import android.text.util.Linkify;
 import android.util.Log;
 import android.util.TypedValue;
@@ -29,7 +28,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -54,6 +52,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -70,9 +70,13 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
     private TableLayout mTableLayout;
     ProgressDialog mProgressBar;
 
+    private String PRODUCTNAME = "";
+    private String CATEGORY = "";
+
+
     static final int BARCODE_READ = 49374;
 
-    StockData[] stockData = new StockData[99];
+    StockData[] stockData = new StockData[999];
 
     //ファイルアクセスここから
     static final int REQUEST_OPEN_FILE = 1001;
@@ -82,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
     EditText editText;
     //ファイルアクセスここまで
 
+    JustTextSize jts = new JustTextSize();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
         mProgressBar = new ProgressDialog(this);
         mTableLayout = (TableLayout) findViewById(R.id.tablePlayers);
         mTableLayout.setStretchAllColumns(true);
-
+        clear();
         selectData();
 
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
@@ -231,31 +236,44 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
         //読み取ったバーコードを表示する
         TextView barcode = findViewById(R.id.barcode);
         barcode.setText(String.valueOf(result));
+        jts.resizeTextView(barcode,30);
+        barcode.setTextColor(Color.BLUE);
 
         //バーコードに該当する個数を表示する
         TextView count = findViewById(R.id.count);
         String stock = selectDataBarcode(db,result);
         if("".equals(stock)) {
             count.setText("0");
+            //Yahooに接続
+            Yahoo yr =  new Yahoo();
+            AsyncHttpRequest task = new AsyncHttpRequest(this);
+            task.execute(yr.getYahooUrl(result));
         }else{
             count.setText(stock);
+
+            EditText proname = findViewById(R.id.proname);
+            proname.setText(PRODUCTNAME);
+            jts.resizeTextView(proname,30);
+            proname.setTextColor(Color.BLUE);
+            EditText category = findViewById(R.id.category);
+            category.setText(CATEGORY);
+            jts.resizeTextView(category,30);
+            category.setTextColor(Color.BLUE);
         }
 
         //1個数を表示する
         EditText editCount = findViewById(R.id.editCount);
         editCount.setText("1");
 
-        //Yahooに接続
-        Yahoo yr =  new Yahoo();
-        AsyncHttpRequest task = new AsyncHttpRequest(this);
-        task.execute(yr.getYahooUrl(result));
-
     }
 
     //項目のクリア
     public void clear(){
-        TextView barcode = findViewById(R.id.barcode);
-        barcode.setText("読み取ったバーコードの値が表示されます。");
+        EditText barcode = findViewById(R.id.barcode);
+        barcode.setText("バーコード値");
+        barcode.setTextColor(Color.BLUE);
+        jts.resizeTextView(barcode,30);
+        barcode.setBackgroundColor(Color.parseColor("#FFDEAD"));
         TextView count = findViewById(R.id.count);
         count.setText("0");
         EditText editCount = findViewById(R.id.editCount);
@@ -265,12 +283,15 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
                 | InputType.TYPE_TEXT_VARIATION_NORMAL
                 | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         proname.setText("読み取ったバーコードの商品名が表示されます。");
-        proname.setTextColor(Color.BLACK);
-        proname.setTextSize(14.0f);
+        proname.setBackgroundColor(Color.parseColor("#FFDEAD"));
+        proname.setTextColor(Color.BLUE);
+        jts.resizeTextView(proname,30);
+
         EditText category = findViewById(R.id.category);
         category.setText("分類名");
-        category.setTextColor(Color.BLACK);
-        category.setTextSize(16.0f);
+        category.setTextColor(Color.BLUE);
+        category.setBackgroundColor(Color.parseColor("#FFDEAD"));
+        jts.resizeTextView(category,30);
     }
 
     @Override
@@ -330,6 +351,9 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
 //            startActivity(Intent.createChooser(sendIntent, null));
 
             openChooserToShareThisApp();
+            return true;
+        }else if (id == R.id.action_clear) {
+            clear();
             return true;
         }
 
@@ -474,6 +498,21 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
         }
     }
 
+    //復元時のデータベースへ挿入するメソッド
+    public void allInsertData(SQLiteDatabase db,
+                           String barcode,
+                           String count,
+                           String product,
+                           String category) {
+
+            ContentValues values = new ContentValues();
+            values.put(helper.COLUMN_NAME_BARCODE, barcode);
+            values.put(helper.COLUMN_NAME_COUNT, count);
+            values.put(helper.COLUMN_NAME_PRODUCT, product);
+            values.put(helper.COLUMN_NAME_CATEGORY, category);
+            db.insert(helper.TABLE_NAME, null, values);
+    }
+
     //データベースへ更新するメソッド
     public void updateData(SQLiteDatabase db,
                            String barcode,
@@ -544,7 +583,7 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
         try{
             cursor = db.query(
                     helper.TABLE_NAME,
-                    new String[]{ "count" },
+                    new String[]{ "count","product","category" },
                     "barcode = ?",
                     new String[]{ barcode },
                     null,
@@ -554,11 +593,17 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
             // まず、Cursorからcountカラム
             // 取り出すためのインデクス値を確認しておく
             int indexCount = cursor.getColumnIndex( "count" );
+            int product = cursor.getColumnIndex( "product" );
+            int category = cursor.getColumnIndex( "category" );
 
             String result = "";
+
+
             while( cursor.moveToNext() ){
                 // 検索結果をCursorから取り出す
                 result = cursor.getString( indexCount );
+                PRODUCTNAME = cursor.getString( product );
+                CATEGORY = cursor.getString( category );
             }
             return result;
         } finally {
@@ -596,13 +641,6 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
         int topRowMargin=0;
         int rightRowMargin=0;
         int bottomRowMargin = 0;
-        int font_size_10dp = 0, font_size_12dp = 0, font_size_14dp = 0, font_size_16dp = 0, font_size_18dp =0, font_size_20dp = 0;
-        font_size_10dp =(int) getResources().getDimension(R.dimen.font_size_veryminismall);
-        font_size_12dp = (int) getResources().getDimension(R.dimen.font_size_verysmall);
-        font_size_14dp = (int) getResources().getDimension(R.dimen.font_size_asmall);
-        font_size_16dp = (int) getResources().getDimension(R.dimen.font_size_littlesmall);
-        font_size_18dp = (int) getResources().getDimension(R.dimen.font_size_small);
-        font_size_20dp = (int) getResources().getDimension(R.dimen.font_size_medium);
 
         int rows = stockData.length;
         getSupportActionBar().setTitle(String.valueOf(rows)+ "件");
@@ -622,9 +660,10 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
             }
             //バーコードデータ
             final TextView tv0 = new TextView(this);
-
-            // 1列目(カテゴリ)
             final TextView tv = new TextView(this);
+            final TextView tv2 = new TextView(this);
+            final TextView tv3 = new TextView(this);
+
             tv.setLayoutParams(new
                     TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
                     TableRow.LayoutParams.WRAP_CONTENT));
@@ -632,33 +671,30 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
             tv.setPadding(5, 15, 0, 15);
             if (i == -1) {
                 tv.setText("分類");
-                tv.setBackgroundColor(Color.parseColor("#d9d9d9"));
-                tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_18dp);
+                tv.setBackgroundColor(Color.parseColor("#ADD8E6"));
+                tv.setTextColor(Color.parseColor("#000000"));
+                tv.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_littlesmall));
             }
             else {
                 tv0.setText(row.getBar());
                 int size2 = row.getCategory().length();
-                if (size2 < 5) {
-                    tv.setText(row.getCategory().substring(0, size2));
-                    tv.setTextSize(TypedValue.COMPLEX_UNIT_PX,font_size_16dp);
-                } else if (size2 < 9) {
-                    tv.setText(row.getCategory().substring(0, 4) + "\n" + row.getCategory().substring(4, size2));
-                    tv.setTextSize(TypedValue.COMPLEX_UNIT_PX,font_size_12dp);
+                if (size2 < 6) {
+                    tv.setText("\n" + row.getCategory().substring(0, size2)+"\n");
+                    tv.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_asmall));
+                } else if (size2 < 11) {
+                    tv.setText(row.getCategory().substring(0, 4) + "\n" + row.getCategory().substring(4, size2)+"\n");
+                    tv.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_asmall));
                 } else {
                     tv.setText(row.getCategory().substring(0, 4) + "\n" + row.getCategory().substring(4, 8) + "\n" + row.getCategory().substring(8, size2));
-                    tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_10dp);
+                    tv.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_asmall));
                 }
-                tv.setTextColor(Color.RED);
-                tv.setClickable(true);
-                tv.setOnClickListener(new View.OnClickListener() {
-                    public void onClick(View v) {
-                        selectBar(tv0.getText().toString());
-                    }
-                });
+                tv.setTextColor(Color.parseColor("#000000"));
+                tv.setGravity(Gravity.CENTER_VERTICAL);
+
             }
 
                 // 2列目(商品名)
-            final TextView tv2 = new TextView(this);
+//            final TextView tv2 = new TextView(this);
             tv2.setLayoutParams(new
                     TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
                     TableRow.LayoutParams.WRAP_CONTENT));
@@ -666,25 +702,37 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
             tv2.setPadding(5, 15, 0, 15);
             if (i == -1) {
                 tv2.setText("商品名");
-                tv2.setBackgroundColor(Color.parseColor("#d9d9d9"));
-                tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_18dp);
+                tv2.setTextColor(Color.parseColor("#000000"));
+                tv2.setBackgroundColor(Color.parseColor("#ADD8E6"));
+                tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_littlesmall));
             }
             else {
                 int size = row.getStockName().length();
+                tv2.setGravity(Gravity.CENTER_VERTICAL);
+                tv2.setTextColor(Color.parseColor("#000000"));
                 if (size < 14) {
-                    tv2.setText(row.getStockName().substring(0, size));
-                    tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_16dp);
+                    tv2.setText("\n" +row.getStockName().substring(0, size)+"\n");
+                    tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_asmall));
                 } else if (size < 27) {
-                    tv2.setText(row.getStockName().substring(0, 13) + "\n" + row.getStockName().substring(13, size));
-                    tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_12dp);
+                    tv2.setText(row.getStockName().substring(0, 13) + "\n" + row.getStockName().substring(13, size)+"\n");
+                    tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_asmall));
                 } else {
                     tv2.setText(row.getStockName().substring(0, 13) + "\n" + row.getStockName().substring(13, 26) + "\n" + row.getStockName().substring(26, size));
-                    tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_10dp);
+                    tv2.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_asmall));
                 }
+
+//                tv2.setClickable(true);
+//                tv2.setOnClickListener(new View.OnClickListener() {
+//                    public void onClick(View v) {
+//
+////                        selectBar(tv0.getText().toString());
+//
+//                    }
+//                });
 
             }
             // 3列目(在庫数)
-            final TextView tv3 = new TextView(this);
+//            final TextView tv3 = new TextView(this);
             tv3.setLayoutParams(new
                     TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
                     TableRow.LayoutParams.WRAP_CONTENT));
@@ -692,58 +740,61 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
             tv3.setPadding(5, 15, 0, 15);
             if (i == -1) {
                 tv3.setText("在庫");
-                tv3.setBackgroundColor(Color.parseColor("#d9d9d9"));
-                tv3.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_18dp);
+                tv3.setBackgroundColor(Color.parseColor("#ADD8E6"));
+                tv3.setTextColor(Color.parseColor("#000000"));
+
+                tv3.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_littlesmall));
             }
             else {
-                tv3.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_16dp);
+                tv3.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_medium));
                 tv3.setGravity(Gravity.CENTER);
-                tv3.setText("\n" + row.getStock());
+                tv3.setTextColor(Color.parseColor("#000000"));
+                tv3.setText("\n" + row.getStock() + "\n");
             }
             // 4列目(リンク)
-            final TextView tv4 = new TextView(this);
-            tv4.setLayoutParams(new
-                    TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
-                    TableRow.LayoutParams.WRAP_CONTENT));
-            tv4.setGravity(Gravity.LEFT);
-            tv4.setPadding(5, 15, 0, 15);
-            if (i == -1) {
-                tv4.setText("リンク");
-                tv4.setBackgroundColor(Color.parseColor("#d9d9d9"));
-                tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_18dp);
-            }
-            else {
-                String yahoolink = "https://shopping.yahoo.co.jp/search?sc_i=shp_sp_search_sort_sortitem&p=" + row.getBar();
-                String amazonlink = "https://www.amazon.co.jp/s?s=price-asc-rank&k=" + row.getBar();
-                String rakutenlink = "https://search.rakuten.co.jp/search/mall/" + row.getBar();
-
-                tv4.setText("yahoo"+"\n"+"amazon"+"\n"+"rakuten");
-                tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX, font_size_14dp);
-                Pattern pattern = Pattern.compile("yahoo");
-                Pattern pattern2 = Pattern.compile("amazon");
-                Pattern pattern3 = Pattern.compile("rakuten");
-                Linkify.TransformFilter filter = new Linkify.TransformFilter() {
-                    @Override
-                    public String transformUrl(Matcher match, String url) {
-                        return yahoolink + "&X=2";
-                    }
-                };
-                Linkify.TransformFilter filter2 = new Linkify.TransformFilter() {
-                    @Override
-                    public String transformUrl(Matcher match, String url) {
-                        return amazonlink;
-                    }
-                };
-                Linkify.TransformFilter filter3 = new Linkify.TransformFilter() {
-                    @Override
-                    public String transformUrl(Matcher match, String url) {
-                        return rakutenlink + "?s=2";
-                    }
-                };
-                Linkify.addLinks(tv4, pattern, yahoolink, null, filter);
-                Linkify.addLinks(tv4, pattern2, amazonlink, null, filter2);
-                Linkify.addLinks(tv4, pattern3, rakutenlink, null, filter3);
-            }
+//            final TextView tv4 = new TextView(this);
+//            tv4.setLayoutParams(new
+//                    TableRow.LayoutParams(TableRow.LayoutParams.WRAP_CONTENT,
+//                    TableRow.LayoutParams.WRAP_CONTENT));
+//            tv4.setGravity(Gravity.LEFT);
+//            tv4.setPadding(5, 15, 0, 15);
+//            if (i == -1) {
+//                tv4.setText("リンク");
+//                tv4.setBackgroundColor(Color.parseColor("#d9d9d9"));
+//                tv4.setTextSize(TypedValue.COMPLEX_UNIT_PX,getResources().getDimension(R.dimen.font_size_asmall));
+//            }
+//            else {
+//                String yahoolink = "https://shopping.yahoo.co.jp/search?sc_i=shp_sp_search_sort_sortitem&p=" + row.getBar();
+//                String amazonlink = "https://www.amazon.co.jp/s?s=price-asc-rank&k=" + row.getBar();
+//                String rakutenlink = "https://search.rakuten.co.jp/search/mall/" + row.getBar();
+//
+//                tv4.setText("yahoo"+"\n"+"amazon"+"\n"+"rakuten");
+//                tv4.setTextSize(jts.resizeTextView(tv4,20));
+//                Pattern pattern = Pattern.compile("yahoo");
+//                Pattern pattern2 = Pattern.compile("amazon");
+//                Pattern pattern3 = Pattern.compile("rakuten");
+//                Linkify.TransformFilter filter = new Linkify.TransformFilter() {
+//                    @Override
+//                    public String transformUrl(Matcher match, String url) {
+//                        return yahoolink + "&X=2";
+//                    }
+//                };
+//                Linkify.TransformFilter filter2 = new Linkify.TransformFilter() {
+//                    @Override
+//                    public String transformUrl(Matcher match, String url) {
+//                        return amazonlink;
+//                    }
+//                };
+//                Linkify.TransformFilter filter3 = new Linkify.TransformFilter() {
+//                    @Override
+//                    public String transformUrl(Matcher match, String url) {
+//                        return rakutenlink + "?s=2";
+//                    }
+//                };
+//                Linkify.addLinks(tv4, pattern, yahoolink, null, filter);
+//                Linkify.addLinks(tv4, pattern2, amazonlink, null, filter2);
+//                Linkify.addLinks(tv4, pattern3, rakutenlink, null, filter3);
+//            }
             // テーブルに行を追加
             final TableRow tr = new TableRow(this);
             tr.setId(i + 1);
@@ -756,8 +807,32 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
             tr.addView(tv);
             tr.addView(tv2);
             tr.addView(tv3);
-            tr.addView(tv4);
+//            tr.addView(tv4);
             mTableLayout.addView(tr, trParams);
+
+            tr.setClickable(true);
+            tr.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+
+                    selectBar(tv0.getText().toString());
+
+                    tr.setBackgroundColor(Color.parseColor("#FFBEE6BE"));
+                    Timer timer1;
+                    timer1 = new Timer();
+                    timer1.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            // TODO Auto-generated method stub
+                            Log.d("run", "TimerTask Thread id = " + Thread.currentThread().getId());
+                            tr.setBackgroundColor(Color.parseColor("#FFFFFF"));;
+                        }
+                    }, 2000);
+                }
+            });
+
+
+
+
             // 罫線を追加
             if (i > -1) {
                 final TableRow trSep = new TableRow(this);
@@ -770,10 +845,10 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
                 TableRow.LayoutParams tvSepLay = new
                         TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,
                         TableRow.LayoutParams.WRAP_CONTENT);
-                tvSepLay.span = 4;
+                tvSepLay.span = 3;
                 tvSep.setLayoutParams(tvSepLay);
                 tvSep.setBackgroundColor(Color.parseColor("#d9d9d9"));
-                tvSep.setHeight(1);
+                tvSep.setHeight(2);
                 trSep.addView(tvSep);
                 mTableLayout.addView(trSep, trParamsSep);
             }
@@ -800,6 +875,55 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
         }
         @Override
         protected void onProgressUpdate(Integer... values) {
+        }
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    //yahooリンクボタン
+    public void getYahoo(View view) {
+
+        EditText bar = findViewById(R.id.barcode);
+        String bc = bar.getText().toString();
+        if(bc.matches("[+-]?\\d*(\\.\\d+)?")) {
+            String yahoolink = "https://shopping.yahoo.co.jp/search?sc_i=shp_sp_search_sort_sortitem&X=2&p=" + bc;
+
+            Intent intent = new Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(yahoolink));
+
+            startActivity(intent);
+        }
+    }
+
+    //amazonリンクボタン
+    public void getAmazon(View view) {
+
+        EditText bar = findViewById(R.id.barcode);
+        String bc = bar.getText().toString();
+        if(bc.matches("[+-]?\\d*(\\.\\d+)?")) {
+            String amazonlink = "https://www.amazon.co.jp/s?s=price-asc-rank&k=" + bc;
+
+
+            Intent intent = new Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(amazonlink));
+
+            startActivity(intent);
+        }
+    }
+
+    //rakutenリンクボタン
+    public void getRakuten(View view) {
+
+        EditText bar = findViewById(R.id.barcode);
+        String bc = bar.getText().toString();
+        if(bc.matches("[+-]?\\d*(\\.\\d+)?")) {
+            String rakutenlink = "https://search.rakuten.co.jp/search/mall/" + bc + "?s=2";
+
+            Intent intent = new Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(rakutenlink));
+
+            startActivity(intent);
         }
     }
 
@@ -853,7 +977,7 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
                     //カンマ区切りで１つづつ配列に入れる
                     String[] RowData = line.split(",");
 
-                    insertData(db, RowData[0], RowData[3], RowData[2], RowData[1]);
+                    allInsertData(db, RowData[0], RowData[3], RowData[2], RowData[1]);
 
                 }
                 bufferReader.close();
