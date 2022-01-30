@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">takapp</string>
+    <string name="app_name">ストッくん『日用品』</string>
     <string name="action_settings_del">登録データ１件削除</string>
     <string name="action_settings">登録データ全件削除</string>
     <string name="action_backup">バックアップ</string>
