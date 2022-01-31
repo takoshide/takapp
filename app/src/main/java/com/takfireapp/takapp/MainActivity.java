@@ -17,7 +17,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.text.InputType;
-import android.text.util.Linkify;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -54,8 +53,6 @@ import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity implements SimpleDialogFragment.SimpleDialogListener{
 
@@ -239,15 +236,27 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
         jts.resizeTextView(barcode,30);
         barcode.setTextColor(Color.BLUE);
 
+        //Yahooの商品リンク生成
+        Yahoo yr =  new Yahoo();
+        YahooBClinkAsyncHttpRequest task = new YahooBClinkAsyncHttpRequest(this);
+        task.execute(yr.getYahooBCUrl(result));
+
+
+
+
+
+
+
+
         //バーコードに該当する個数を表示する
         TextView count = findViewById(R.id.count);
         String stock = selectDataBarcode(db,result);
         if("".equals(stock)) {
             count.setText("0");
             //Yahooに接続
-            Yahoo yr =  new Yahoo();
-            AsyncHttpRequest task = new AsyncHttpRequest(this);
-            task.execute(yr.getYahooUrl(result));
+//            Yahoo yr =  new Yahoo();
+            YahooProductNameAsyncHttpRequest ypnahrTask = new YahooProductNameAsyncHttpRequest(this);
+            ypnahrTask.execute(yr.getYahooUrl(result));
         }else{
             count.setText(stock);
 
@@ -881,14 +890,12 @@ public class MainActivity extends AppCompatActivity implements SimpleDialogFragm
     //yahooリンクボタン
     public void getYahoo(View view) {
 
-        EditText bar = findViewById(R.id.barcode);
-        String bc = bar.getText().toString();
-        if(bc.matches("[+-]?\\d*(\\.\\d+)?")) {
-            String yahoolink = "https://shopping.yahoo.co.jp/search?sc_i=shp_sp_search_sort_sortitem&X=2&p=" + bc;
+        TextView yr = findViewById(R.id.yahooURL);
 
+        if(!"".equals(yr.getText().toString())) {
             Intent intent = new Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse(yahoolink));
+                    Uri.parse(yr.getText().toString()));
 
             startActivity(intent);
         }

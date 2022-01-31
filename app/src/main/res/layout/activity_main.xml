@@ -271,5 +271,12 @@
         app:layout_constraintEnd_toStartOf="@+id/yahoo"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout" />
 
+    <TextView
+        android:id="@+id/yahooURL"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        tools:layout_editor_absoluteX="369dp"
+        tools:layout_editor_absoluteY="5dp" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
